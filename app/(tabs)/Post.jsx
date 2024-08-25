@@ -11,19 +11,23 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { collection, addDoc } from "firebase/firestore";
+import { getAuth } from "firebase/auth";
 import { auth, db, storage } from "../../config/firebaseConfig";
 import { useGlobalContext } from "../../context/GlobalProvider";
 import { uploadBytes } from "firebase/storage";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import CustomButton from "./../../components/CustomButton";
+import { router } from "expo-router";
 
 const PostScreen = () => {
-  const { user } = useGlobalContext();
+  const { user, setUser } = useGlobalContext();
 
+  const auth = getAuth();
+  const userFromFB = auth.currentUser;
   const [description, setDescription] = useState("");
   const [postType, setPostType] = useState("order");
   const [category, setCategory] = useState("");
-  const [price, setPrice] = useState("");
+  const [price, setPrice] = useState("negotiable");
   const [locationFrom, setLocationFrom] = useState("Anywhere");
   const [locationTo, setLocationTo] = useState("AddisAbaba");
   const [image, setImage] = useState(null);
@@ -35,7 +39,6 @@ const PostScreen = () => {
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
-      aspect: [4, 3],
       quality: 1,
     });
 
@@ -44,27 +47,49 @@ const PostScreen = () => {
     }
   };
 
+  const checkEmailVerification = async () => {
+    if (!userFromFB) {
+      console.log("not found");
+      return false;
+    }
+    await userFromFB.reload(); // Reload user data
+    return userFromFB.emailVerified;
+  };
+
   const handleSubmit = async () => {
-    console.log("HANDLESUBMIT");
-    if (!description || !category || !price || !contactInfo || !image) {
-      Alert.alert("Please fill all required fields.");
-      return;
-    }
-
-    if (!user) {
-      Alert.alert("You must be logged in to create a post.");
-      return;
-    }
+    setIsLoading(true);
     try {
-      setIsLoading(true);
-      const storageRef = ref(storage, `images/${new Date().toISOString()}`);
+      if (!user) {
+        Alert.alert("You must be logged in to create a post.");
+        return;
+      }
 
-      const response = await fetch(image);
-      const blob = await response.blob();
+      if (!description || !category || !price || !contactInfo) {
+        Alert.alert("Please fill all required fields.");
+        return;
+      }
 
-      await uploadBytes(storageRef, blob);
+      const emailVerified = await checkEmailVerification();
+      if (!emailVerified) {
+        Alert.alert(
+          "Email Verification Required",
+          "Please check your email to verify before posting."
+        );
+        return;
+      }
 
-      const downloadURL = await getDownloadURL(storageRef);
+      setUser({ ...user, emailVerified: true });
+
+      let downloadURL = null; // Initialize downloadURL
+
+      if (image) {
+        const storageRef = ref(storage, `images/${new Date().toISOString()}`);
+        const response = await fetch(image);
+        const blob = await response.blob();
+        await uploadBytes(storageRef, blob);
+        downloadURL = await getDownloadURL(storageRef); // Get the download URL
+      }
+
       const postData = {
         description,
         postType,
@@ -72,25 +97,33 @@ const PostScreen = () => {
         price,
         locationFrom,
         locationTo,
-        image: downloadURL, // Store the image URL
+        image: downloadURL, // Store the image URL (null if no image)
         contactInfo,
         creatorUid: user?.uid,
         timestamp: new Date(),
         username: user.displayName,
       };
+
       await addDoc(collection(db, "posts"), postData);
       Alert.alert("Post created successfully");
+      setCategory("");
+      setContactInfo("");
+      setDescription("");
+      setImage("");
+      setLocationFrom("");
+      setLocationTo("");
+      setPrice("");
+      router.push("/Travlers");
     } catch (error) {
       console.error("Error posting", error);
       Alert.alert("Error creating post");
-      throw error;
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <ScrollView className="p-5 bg-white ">
+    <ScrollView className="p-5 bg-white pb-12">
       <Text className="text-2xl font-bold text-center mb-5">
         Create a New Post
       </Text>
@@ -157,7 +190,6 @@ const PostScreen = () => {
           onChangeText={setPrice}
           className="border border-gray-300 p-3 rounded text-base"
           placeholder="Enter price"
-          keyboardType="numeric"
         />
       </View>
       <View className="mb-5">
@@ -213,7 +245,7 @@ const PostScreen = () => {
         title="Create post"
         handlePress={handleSubmit}
         isLoading={isLoading}
-        containerStyles="mt-6 bg-Primary mb-9"
+        containerStyles="mt-6 bg-Primary mb-[149px]"
         textStyles="text-white"
       />
     </ScrollView>

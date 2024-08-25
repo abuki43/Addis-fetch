@@ -1,20 +1,17 @@
-import { View, Text, FlatList } from "react-native";
+import { View, Text } from "react-native";
 import ReviewCard from "../ReviewCard";
-import { SectionList } from "react-native";
 
 import React from "react";
 
 const Reviews = ({ reviews }) => {
+  console.log("reviews", reviews);
   return (
     <View className="flex-1 p-4 bg-white">
-      {reviews.length === 0 ? (
+      {reviews.length === 0 || !reviews ? (
         <Text className="text-center text-gray-500">No reviews yet.</Text>
       ) : (
-        <FlatList
-          data={reviews}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => <ReviewCard review={item} />}
-        />
+        reviews &&
+        reviews.map((item) => <ReviewCard key={item.id} review={item} />)
       )}
     </View>
   );

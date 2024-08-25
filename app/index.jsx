@@ -6,20 +6,27 @@ import {
   StyleSheet,
   Dimensions,
   TouchableOpacity,
+  Alert,
 } from "react-native";
 import { Redirect, router } from "expo-router";
 import Swiper from "react-native-swiper";
 import { CustomButton } from "../components/CustomButton";
+import { StatusBar } from "expo-status-bar";
 
-import logo from "../assets/images/logo.png";
-import secondImage from "../assets/images/secondImage.png";
-import thirdImage from "../assets/images/thirdImage1.png";
-import fourthImage from "../assets/images/fourthImage.png";
+// import logo from "../assets/images/logo.png";
+// import secondImage from "../assets/images/secondImage.png";
+// import thirdImage from "../assets/images/thirdImage1.png";
+// import fourthImage from "../assets/images/fourthImage.png";
+
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useGlobalContext } from "../context/GlobalProvider";
 const { width } = Dimensions.get("window");
+import newImage from "../assets/images/IMAGE3.png";
+import newImage2 from "../assets/images/IMAGE4.png";
+import newImage3 from "../assets/images/IMAGE5.png";
+import newImage4 from "../assets/images/IMAGE6.png";
 
-const OnboardingScreen = ({ navigation }) => {
+const OnboardingScreen = () => {
   const { setUser } = useGlobalContext();
 
   const swiperRef = useRef(null);
@@ -31,88 +38,91 @@ const OnboardingScreen = ({ navigation }) => {
   };
 
   const onStart = () => {
-    router.push("/signIn");
+    router.push("/Travlers");
   };
 
-  // useEffect(() => {
-  //   const fetchUser = async () => {
-  //     try {
-  //       const user = await AsyncStorage.getItem("userData");
-  //       console.log("user", user);
-  //       if (user) {
-  //         try {
-  //           const userData = JSON.parse(user);
-  //           setUser(userData);
-  //           router.push("/Travlers");
-  //         } catch (error) {
-  //           console.error("Error parsing user data from AsyncStorage:", error);
-  //           // Handle the case where the user data is not a valid JSON string
-  //         }
-  //       }
-  //     } catch (error) {
-  //       console.error("Error retrieving user data from AsyncStorage:", error);
-  //     }
-  //   };
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const user = await AsyncStorage.getItem("userData");
+        console.log("user", user);
+        if (user) {
+          try {
+            const userData = JSON.parse(user);
+            setUser(userData);
+            router.push("/Travlers");
+          } catch (error) {
+            console.error("Error parsing user data from AsyncStorage:", error);
+            // Handle the case where the user data is not a valid JSON string
+          }
+        }
+      } catch (error) {
+        console.error("Error retrieving user data from AsyncStorage:", error);
+      }
+    };
 
-  //   fetchUser();
-  // }, []);
+    fetchUser();
+  }, []);
 
   return (
-    <View style={styles.container}>
-      <Swiper
-        ref={swiperRef}
-        showsPagination={true}
-        paginationStyle={styles.pagination}
-        dotStyle={styles.dot}
-        activeDotStyle={styles.activeDot}
-        loop={false}
-        showsButtons={true} // shows the > button to move to the next slide
-      >
-        {/* Slide 1 */}
-        <View style={styles.slide}>
-          <Image source={logo} style={styles.logo} />
-          <Text style={styles.title}>Welcome to AddisFetch!</Text>
-          <Text style={styles.description}>Your world, delivered.</Text>
-          <TouchableOpacity style={styles.nextButton} onPress={handleNext}>
-            <Text style={styles.nextButtonText}>Next</Text>
-          </TouchableOpacity>
-        </View>
+    <>
+      <View style={styles.container} classname="bg-gray-100">
+        <Swiper
+          ref={swiperRef}
+          showsPagination={true}
+          paginationStyle={styles.pagination}
+          dotStyle={styles.dot}
+          activeDotStyle={styles.activeDot}
+          loop={false}
+          showsButtons={false} // shows the > button to move to the next slide
+        >
+          {/* Slide 1 */}
+          <View style={styles.slide}>
+            <Image source={newImage} style={styles.logo} />
+            <Text style={styles.title}>Welcome to AddisFetch!</Text>
+            <Text style={styles.description}>Your world, delivered.</Text>
+            <TouchableOpacity style={styles.nextButton} onPress={handleNext}>
+              <Text style={styles.nextButtonText}>Next</Text>
+            </TouchableOpacity>
+          </View>
 
-        <View style={styles.slide}>
-          <Image source={secondImage} style={styles.logo} />
-          <Text style={styles.title}>Shop the World, Your Way.</Text>
-          <Text style={styles.description}>
-            Discover a global marketplace at your fingertips.
-          </Text>
-          <TouchableOpacity style={styles.nextButton} onPress={handleNext}>
-            <Text style={styles.nextButtonText}>next</Text>
-          </TouchableOpacity>
-        </View>
+          <View style={styles.slide}>
+            <Image source={newImage2} style={styles.logo} />
+            <Text style={styles.title}>Shop the World, Your Way.</Text>
+            <Text style={styles.description}>
+              Discover a global marketplace at your fingertips.
+            </Text>
+            <TouchableOpacity style={styles.nextButton} onPress={handleNext}>
+              <Text style={styles.nextButtonText}>next</Text>
+            </TouchableOpacity>
+          </View>
 
-        <View style={styles.slide}>
-          <Image source={thirdImage} style={styles.logo} />
-          <Text style={styles.title}>
-            {" "}
-            Earn Up to 30% Back on Your Flight Cost.
-          </Text>
-          <Text style={styles.description}>Shop and travel with us.</Text>
-          <TouchableOpacity style={styles.nextButton} onPress={handleNext}>
-            <Text style={styles.nextButtonText}>next</Text>
-          </TouchableOpacity>
-        </View>
+          <View style={styles.slide}>
+            <Image source={newImage3} style={styles.logo} />
+            <Text style={styles.title}>
+              {" "}
+              Earn Up to 30% Back on Your Flight Cost.
+            </Text>
+            <Text style={styles.description}>Shop and travel with us.</Text>
+            <TouchableOpacity style={styles.nextButton} onPress={handleNext}>
+              <Text style={styles.nextButtonText}>next</Text>
+            </TouchableOpacity>
+          </View>
 
-        <View style={styles.slide}>
-          <Image source={fourthImage} style={styles.logo} />
-          <Text style={styles.title}>Chat and Negotiate.</Text>
-          <Text style={styles.description}>
-            Chat with sellers to negotiate prices and arrange meetups.
-          </Text>
-          <TouchableOpacity style={styles.nextButton} onPress={onStart}>
-            <Text style={styles.nextButtonText}>start</Text>
-          </TouchableOpacity>
-        </View>
-      </Swiper>
-    </View>
+          <View style={styles.slide}>
+            <Image source={newImage4} style={styles.logo} />
+            <Text style={styles.title}>Chat and Negotiate.</Text>
+            <Text style={styles.description}>
+              Chat with sellers to negotiate prices and arrange meetups.
+            </Text>
+            <TouchableOpacity style={styles.nextButton} onPress={onStart}>
+              <Text style={styles.nextButtonText}>start</Text>
+            </TouchableOpacity>
+          </View>
+        </Swiper>
+      </View>
+      <StatusBar style="dark" />
+    </>
   );
 };
 
@@ -124,19 +134,18 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#ffffff", // Adjust this color if needed
     paddingHorizontal: 10,
   },
   logo: {
-    width: width * 0.5, // Adjust the logo size as needed
-    height: width * 0.5,
-    marginBottom: 20,
+    width: width * 0.7, // Adjust the logo size as needed
+    height: width * 0.7,
+    marginBottom: -10,
     backgroundColor: "transparent",
   },
   title: {
     fontSize: 30,
     fontWeight: "bold",
-    color: "#000000", // Adjust this color if needed
+    color: "#DE6E1F", // Adjust this color if needed
     marginBottom: 10,
     textAlign: "center",
   },
@@ -153,14 +162,14 @@ const styles = StyleSheet.create({
     color: "#000000", // Adjust this color if needed
   },
   dot: {
-    backgroundColor: "#bbbbbb",
+    backgroundColor: "#ffffff",
     width: 8,
     height: 8,
     borderRadius: 4,
     marginHorizontal: 3,
   },
   activeDot: {
-    backgroundColor: "#000000",
+    backgroundColor: "#DE6E1F",
     width: 8,
     height: 8,
     borderRadius: 4,
@@ -169,7 +178,7 @@ const styles = StyleSheet.create({
   nextButton: {
     position: "absolute",
     bottom: 30, // Adjust this value to position the button above the bottom edge
-    backgroundColor: "#35424a", // Button background color
+    backgroundColor: "#DE6E1F", // Button background color
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 20,

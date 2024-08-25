@@ -51,8 +51,16 @@ const ReviewPage = () => {
     }
   };
 
+  if (!reviewedPersonId) {
+    return (
+      <View className="flex-1 justify-center items-center bg-gray-100">
+        <Text className="text-lg text-gray-500">Can not find the user</Text>
+      </View>
+    );
+  }
+
   return (
-    <View className="flex-1 p-4 bg-gray-100">
+    <View className="flex-1 p-4 bg-gray-100 pt-8">
       <Text className="text-xl font-bold mb-4">Write a Review</Text>
 
       <Text className="text-lg mb-2">Rating</Text>

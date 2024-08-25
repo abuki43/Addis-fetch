@@ -1,5 +1,14 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { View, ActivityIndicator, Alert, Text, Image } from "react-native";
+import {
+  View,
+  ActivityIndicator,
+  Alert,
+  Text,
+  Image,
+  StyleSheet,
+  TouchableOpacity,
+  Modal,
+} from "react-native";
 import { Link } from "expo-router";
 import {
   collection,
@@ -11,12 +20,21 @@ import {
   orderBy,
   updateDoc,
   doc,
+  serverTimestamp,
 } from "firebase/firestore";
+
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { auth, db, storage } from "../../config/firebaseConfig";
 import { useLocalSearchParams } from "expo-router";
-import { GiftedChat, Actions, Bubble } from "react-native-gifted-chat";
+import {
+  GiftedChat,
+  Actions,
+  Bubble,
+  InputToolbar,
+} from "react-native-gifted-chat";
 import * as ImagePicker from "expo-image-picker";
+
+// there is some error on Gifted chat , found the below temp solution
 
 const error = console.error;
 console.error = (...args) => {
@@ -31,8 +49,11 @@ const PrivateChat = () => {
   const [loading, setLoading] = useState(true);
   const [imageUploading, setImageUploading] = useState(false);
   const [error, setError] = useState(null);
-  const user = auth.currentUser;
 
+  const [selectedImage, setSelectedImage] = useState(null); // for the image popup || to view the image at larger size
+  const [isModalVisible, setIsModalVisible] = useState(false);
+
+  const user = auth.currentUser;
   useEffect(() => {
     const initiateOrContinueChat = async () => {
       if (!user || !UID) return;
@@ -75,11 +96,12 @@ const PrivateChat = () => {
             (querySnapshot) => {
               const messagesList = querySnapshot.docs.map((doc) => {
                 const data = doc.data();
+                console.log(data.timestamp);
                 return {
                   _id: doc.id,
                   text: data.text.startsWith("http") ? "" : data.text,
                   image: data.text.startsWith("http") ? data.text : null,
-                  createdAt: data.timestamp.toDate(),
+                  createdAt: data?.timestamp?.toDate() || new Date(),
                   user: {
                     _id: data.senderId,
                   },
@@ -87,7 +109,7 @@ const PrivateChat = () => {
               });
 
               setMessages(
-                messagesList.sort((a, b) => a.createdAt - b.createdAt).reverse() // Sort messages chronologically
+                messagesList.sort((a, b) => a.createdAt - b.createdAt).reverse()
               );
 
               setLoading(false);
@@ -121,34 +143,33 @@ const PrivateChat = () => {
     async (newMessages = []) => {
       const [message] = newMessages;
       try {
-        setImageUploading(true); // Start loading
+        setImageUploading(true);
 
         if (message.image) {
-          // Send image
           await addDoc(collection(db, "chats", chatId, "messages"), {
             text: message.image,
             senderId: user.uid,
-            timestamp: new Date(),
+            timestamp: serverTimestamp(),
           });
         } else {
-          // Send text
           await addDoc(collection(db, "chats", chatId, "messages"), {
             text: message.text,
             senderId: user.uid,
-            timestamp: new Date(),
+            timestamp: serverTimestamp(),
           });
         }
+        console.log("message sent");
+        setImageUploading(false);
 
-        setImageUploading(false); // End loading
-        const otherParticipantId = UID; // // Set unread status only for the other participant
-        // Update unread status for the recipient
+        const otherParticipantId = UID;
         await updateDoc(doc(db, "chats", chatId), {
           [`unread_${otherParticipantId}`]: true,
+          [`unread_${user.uid}`]: false,
         });
       } catch (err) {
         setError("Error sending message");
         console.error(err);
-        setImageUploading(false); // End loading in case of error
+        setImageUploading(false);
       }
     },
     [chatId, user]
@@ -172,15 +193,15 @@ const PrivateChat = () => {
   };
 
   const pickImage = async () => {
-    let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      quality: 1,
-    });
+    try {
+      let result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        quality: 1,
+      });
 
-    if (!result.canceled) {
-      try {
-        setImageUploading(true); // Start loading
+      if (!result.canceled) {
+        setImageUploading(true);
 
         const imageUrl = await uploadImage(result.assets[0].uri);
         if (imageUrl) {
@@ -192,73 +213,124 @@ const PrivateChat = () => {
             },
           ]);
         }
-        setImageUploading(false); // End loading
-      } catch (error) {
-        Alert.alert("Error", "Failed to upload image.");
-        setImageUploading(false); // End loading in case of error
       }
+    } catch (error) {
+      Alert.alert("Error", "Failed to upload image.");
+      console.error(error);
+    } finally {
+      setImageUploading(false);
     }
+  };
+
+  const handleImageClick = (imageUri) => {
+    console.log("Image Clicked:", imageUri);
+    setSelectedImage(imageUri);
+    setIsModalVisible(true);
   };
 
   const renderActions = (props) => (
     <Actions
       {...props}
+      containerStyle={styles.actionsContainer}
       options={{
         ["Send Image"]: pickImage,
       }}
-      icon={() => <Text className="text-lg">+</Text>}
+      icon={() => (
+        <Text
+          className={`w-8 h-8 bg-Secondary text-white rounded-full text-center text-lg`}
+        >
+          +
+        </Text>
+      )}
+    />
+  );
+
+  const renderInputToolbar = (props) => (
+    <InputToolbar
+      {...props}
+      containerStyle={styles.inputToolbar}
+      primaryStyle={styles.inputToolbarPrimary}
+      disabled={imageUploading} // Disable while uploading
     />
   );
 
   const renderBubble = (props) => {
     if (props.currentMessage.image) {
       return (
-        <Bubble
-          {...props}
-          renderMessageText={() => null} // Prevent text(image link) from being rendered
-          renderMessageImage={() => (
+        <View>
+          <TouchableOpacity
+            onPress={() => {
+              handleImageClick(props.currentMessage.image);
+            }}
+          >
             <Image
               source={{ uri: props.currentMessage.image }}
-              style={{ width: 200, height: 200, borderRadius: 10 }}
+              style={styles.messageImage}
             />
-          )}
-        />
+          </TouchableOpacity>
+        </View>
       );
     }
-    return <Bubble {...props} />;
+    return (
+      <Bubble
+        {...props}
+        wrapperStyle={{
+          left: styles.leftBubble,
+          right: styles.rightBubble,
+        }}
+      />
+    );
   };
 
-  if (loading) return <ActivityIndicator size="large" color="#0000ff" />;
-  if (error) return <Text>{error}</Text>;
+  if (loading) {
+    return (
+      <View className="flex-1 justify-center items-center bg-transparent">
+        <ActivityIndicator size="large" color="#EA9050" />
+      </View>
+    );
+  }
+  if (error) return <Text className="text-center text-red-500">{error}</Text>;
 
   return (
-    <View className="flex-1 bg-white mt-6">
-      <View className="p-4 bg-gray-900 border-b border-gray-300 rounded-lg">
-        <Text className="text-xl font-bold text-white text-center">
-          {fullname}
-        </Text>
-      </View>
-
-      <View className="bg-slate-400">
-        <Link href={`/ReviewPage?reviewedPersonId=${UID}`}>
-          <Text className="text-center text-Primary underline">
-            Write a review
+    <View className="flex-1 bg-white mt-6 px-1">
+      <View className="mt-3 mx-2 p-4 bg-[#e5e7eb]  rounded-lg flex ">
+        <Link href={`/OthersProfile?UID=${UID}`} className="text-center">
+          <Text className="text-xl font-bold text-slate-700 text-center">
+            {fullname || "unknown"}
           </Text>
         </Link>
       </View>
-      {imageUploading && (
-        <View
-          style={{
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            marginTop: -25,
-            marginLeft: -25,
-          }}
+
+      <View style={styles.reviewContainer}>
+        <Link href={`/ReviewPage?reviewedPersonId=${UID}`}>
+          <Text style={styles.reviewText}>Write a review</Text>
+        </Link>
+      </View>
+
+      {isModalVisible && (
+        <Modal
+          visible={isModalVisible}
+          transparent={true}
+          onRequestClose={() => setIsModalVisible(false)}
         >
-          <ActivityIndicator size="large" color="#0000ff" />
+          <View style={styles.modalContainer}>
+            <Image source={{ uri: selectedImage }} style={styles.modalImage} />
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={() => setIsModalVisible(false)}
+            >
+              <Text style={styles.closeButtonText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </Modal>
+      )}
+
+      {imageUploading && (
+        <View style={styles.uploadingOverlay}>
+          <ActivityIndicator size="large" color="#4f46e5" />
         </View>
       )}
+
       <GiftedChat
         messages={messages}
         onSend={handleSend}
@@ -266,6 +338,7 @@ const PrivateChat = () => {
         renderUsernameOnMessage
         renderActions={renderActions}
         renderBubble={renderBubble}
+        renderInputToolbar={renderInputToolbar}
         renderAvatar={({ currentMessage }) => {
           const isCurrentUser = currentMessage.user._id === user.uid;
           const initial = isCurrentUser
@@ -284,5 +357,144 @@ const PrivateChat = () => {
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  messageImage: {
+    width: 200,
+    height: 200,
+    borderRadius: 10,
+  },
+  uploadingOverlay: {
+    position: "absolute",
+    top: "50%",
+    left: "50%",
+    marginTop: -25,
+    marginLeft: -25,
+  },
+  leftBubble: {
+    backgroundColor: "#e5e7eb", // Gray-100
+  },
+  rightBubble: {
+    backgroundColor: "gray",
+  },
+  reviewContainer: {
+    // marginVertical: 5,
+    // backgroundColor: "#4f46e5",
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    marginHorizontal: 20,
+  },
+  reviewText: {
+    color: "black",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  actionsContainer: {
+    marginLeft: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  actionButton: {
+    backgroundColor: "black",
+    borderRadius: 25,
+    width: 30,
+    height: 30,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  actionButtonText: {
+    width: 30,
+    height: 30,
+    backgroundColor: "black",
+    color: "#fff",
+    textAlign: "center",
+    lineHeight: 30,
+    fontSize: 20,
+    fontWeight: "bold",
+  },
+
+  inputToolbar: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: 10,
+    borderWidth: 1,
+    color: "black",
+    borderColor: "#ccc",
+    marginHorizontal: 10,
+    paddingHorizontal: 10,
+    marginTop: 10,
+    marginBottom: 5,
+  },
+
+  inputToolbarPrimary: {
+    flex: 1,
+    marginLeft: 10,
+  },
+
+  actionContainer: {
+    position: "absolute",
+    left: -10,
+    bottom: 6,
+    zIndex: 1,
+  },
+
+  iconContainer: {
+    backgroundColor: "black",
+    borderRadius: 25,
+    width: 30,
+    height: 30,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: -10,
+    top: 50,
+  },
+
+  actionButton: {
+    backgroundColor: "black",
+    borderRadius: 25,
+    width: 30,
+    height: 30,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  actionButtonText: {
+    color: "#fff",
+    fontSize: 20,
+    fontWeight: "bold",
+  },
+  inputToolbar: {
+    marginTop: 10,
+    marginBottom: 5,
+    marginHorizontal: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#ccc",
+    paddingHorizontal: 10,
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.8)",
+  },
+  modalImage: {
+    width: "90%",
+    height: "80%",
+  },
+  closeButton: {
+    marginTop: 20,
+    backgroundColor: "#f87171",
+    padding: 10,
+    borderRadius: 10,
+  },
+  closeButtonText: {
+    color: "#ffffff",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+});
 
 export default PrivateChat;

@@ -4,7 +4,7 @@ import {
   ScrollView,
   Text,
   ActivityIndicator,
-  Button,
+  TouchableOpacity,
 } from "react-native";
 import {
   doc,
@@ -12,7 +12,6 @@ import {
   updateDoc,
   collection,
   getDocs,
-  get,
   query,
   where,
 } from "firebase/firestore";
@@ -23,7 +22,8 @@ import ProfileActivities from "./ProfileActivities";
 import Reviews from "./Reviews";
 import { useGlobalContext } from "./../../context/GlobalProvider";
 import { db } from "../../config/firebaseConfig";
-import { VirtualizedList } from "react-native";
+import { useRouter } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const ProfilePage = ({ isOwner, userID }) => {
   const { user: globalUser, setUser } = useGlobalContext();
@@ -33,31 +33,35 @@ const ProfilePage = ({ isOwner, userID }) => {
   const [posts, setPosts] = useState([]);
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const router = useRouter();
 
-  let profileUserID = isOwner ? globalUser.uid : userID; // this is used when to get the user id of the profile being viewed(where he is sees his own profile or someone else's profile)
+  let profileUserID = isOwner ? globalUser?.uid : userID;
 
   const fetchUser = async () => {
     try {
-      // Reference to the user's document in Firestore
-      const userDocRef = doc(db, "users", profileUserID);
+      if (!profileUserID) {
+        throw new Error("No user ID found");
+      }
 
-      // Fetch the document snapshot
+      const userDocRef = doc(db, "users", profileUserID);
       const userDocSnap = await getDoc(userDocRef);
 
-      // Check if the document exists and then retrieve the data
       if (userDocSnap.exists()) {
-        const userData = userDocSnap.data();
-        setCurrentUser(userData);
+        setCurrentUser(userDocSnap.data());
       } else {
         console.error("No such user document!");
+        setError("User not found");
       }
     } catch (error) {
       console.error("Error fetching user:", error);
+      setError("Failed to fetch user data");
+    } finally {
+      setLoading(false);
     }
   };
 
   const fetchPosts = async () => {
-    console.log("from profile page", profileUserID);
     setLoading(true);
     try {
       const postsQuery = query(
@@ -74,6 +78,7 @@ const ProfilePage = ({ isOwner, userID }) => {
       setPosts(postsData);
     } catch (error) {
       console.error("Error fetching posts:", error);
+      setError("Failed to fetch posts");
     } finally {
       setLoading(false);
     }
@@ -91,58 +96,106 @@ const ProfilePage = ({ isOwner, userID }) => {
         ...doc.data(),
       }));
       setReviews(reviewsData);
-      console.log("reviews", reviews);
-      setLoading(false);
     } catch (error) {
-      console.error("Error fetching reviews: ", error);
+      console.error("Error fetching reviews:", error);
+      setError("Failed to fetch reviews");
+    } finally {
       setLoading(false);
     }
   };
-  useEffect(() => {
-    if (isOwner) {
-      setCurrentUser(globalUser);
-    } else {
-      // Fetch user data from Firebase
 
-      fetchUser();
-    }
-    // Fetch posts data from Firebase
-
+  const refresh = () => {
+    setError(null);
+    setLoading(true);
+    fetchUser();
     fetchPosts();
     fetchReviews();
-  }, []);
+  };
+
+  useEffect(() => {
+    if (isOwner) {
+      if (globalUser) {
+        setCurrentUser(globalUser);
+        fetchPosts();
+        fetchReviews();
+      } else {
+        setError("Global user is not available");
+        setLoading(false);
+      }
+    } else {
+      if (userID) {
+        fetchUser();
+        fetchPosts();
+        fetchReviews();
+      } else {
+        setError("User ID is not provided");
+        setLoading(false);
+      }
+    }
+  }, [isOwner, userID, globalUser]);
 
   const saveProfile = async (info) => {
-    console.log("clicked");
     if (isOwner) {
-      console.log("passwed");
       try {
         setLoading(true);
         const userDocRef = doc(db, "users", globalUser.uid);
         await updateDoc(userDocRef, info);
         setIsEditing(false);
-        setUser({ ...info, globalUser });
+        setUser({ ...globalUser, ...info });
+        await AsyncStorage.setItem(
+          "userData",
+          JSON.stringify({ ...globalUser, ...info })
+        );
         fetchUser();
-        setLoading(false);
       } catch (error) {
         console.error("Error updating profile:", error);
+        setError("Failed to update profile");
+      } finally {
+        setLoading(false);
       }
     }
   };
 
-  posts.map((post) => console.log("p", post.creatorUid));
-  console.log("u", globalUser.uid);
-
   if (loading) {
     return (
       <View className="flex-1 justify-center items-center">
-        <ActivityIndicator size="large" color="#007BFF" />
+        <ActivityIndicator size="large" color="#EA9050" />
+      </View>
+    );
+  }
+
+  if (!globalUser && isOwner) {
+    return (
+      <View className="flex-1 justify-center items-center bg-gray-100">
+        <Text className="text-lg text-gray-500">
+          Please sign up to view your profile.
+        </Text>
+        <TouchableOpacity
+          className="mt-4 px-4 py-2 bg-Secondary rounded-lg"
+          onPress={() => router.push("/signUp")}
+        >
+          <Text className="text-white font-bold">Sign Up</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View className="flex-1 justify-center items-center bg-gray-100">
+        <Text className="text-lg text-gray-500">{error}</Text>
+        <TouchableOpacity
+          className="mt-4 px-4 py-2 bg-Secondary rounded-lg"
+          onPress={refresh}
+        >
+          <Text className="text-white font-bold">Refresh</Text>
+        </TouchableOpacity>
       </View>
     );
   }
 
   return (
-    <View className=" flex-1 bg-gray-100 ">
+    <ScrollView className="flex-1 bg-gray-100">
       <ProfileHeader
         user={currentUser}
         isOwner={isOwner}
@@ -154,20 +207,21 @@ const ProfilePage = ({ isOwner, userID }) => {
         setActiveTab={setActiveTab}
         isOwner={isOwner}
       />
-      {activeTab === "info" && (
-        <ProfileInfo
-          isOwner={isOwner}
-          user={currentUser}
-          isEditing={isEditing}
-          setIsEditing={setIsEditing}
-          saveProfile={saveProfile}
-          isLoading={loading}
-        />
-      )}
-      {activeTab === "posts" && <ProfileActivities posts={posts} />}
-
-      {activeTab === "reviews" && <Reviews reviews={reviews} />}
-    </View>
+      <View className="flex-1">
+        {activeTab === "info" && (
+          <ProfileInfo
+            isOwner={isOwner}
+            user={currentUser}
+            isEditing={isEditing}
+            setIsEditing={setIsEditing}
+            saveProfile={saveProfile}
+            isLoading={loading}
+          />
+        )}
+        {activeTab === "posts" && <ProfileActivities posts={posts} />}
+        {activeTab === "reviews" && <Reviews reviews={reviews} />}
+      </View>
+    </ScrollView>
   );
 };
 

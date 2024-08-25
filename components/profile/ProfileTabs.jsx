@@ -3,8 +3,13 @@ import { View, Text, TouchableOpacity } from "react-native";
 
 const ProfileTabs = ({ activeTab, setActiveTab, isOwner }) => {
   return (
-    <View className="flex-row justify-around my-2">
-      <TouchableOpacity onPress={() => setActiveTab("info")} className="py-2">
+    <View className="flex-row justify-around bg-white shadow-md py-2 rounded-b-lg">
+      <TouchableOpacity
+        onPress={() => setActiveTab("info")}
+        className={`py-2 px-4 rounded-lg ${
+          activeTab === "info" ? "bg-[#f2bb94]" : "bg-transparent"
+        }`}
+      >
         <Text
           className={
             activeTab === "info"
@@ -15,7 +20,12 @@ const ProfileTabs = ({ activeTab, setActiveTab, isOwner }) => {
           Info
         </Text>
       </TouchableOpacity>
-      <TouchableOpacity onPress={() => setActiveTab("posts")} className="py-2">
+      <TouchableOpacity
+        onPress={() => setActiveTab("posts")}
+        className={`py-2 px-4 rounded-lg ${
+          activeTab === "posts" ? "bg-[#f2bb94]" : "bg-transparent"
+        }`}
+      >
         <Text
           className={
             activeTab === "posts"
@@ -26,22 +36,22 @@ const ProfileTabs = ({ activeTab, setActiveTab, isOwner }) => {
           Posts
         </Text>
       </TouchableOpacity>
-      {
-        <TouchableOpacity
-          onPress={() => setActiveTab("reviews")}
-          className="py-2"
+      <TouchableOpacity
+        onPress={() => setActiveTab("reviews")}
+        className={`py-2 px-4 rounded-lg ${
+          activeTab === "reviews" ? "bg-[#f2bb94]" : "bg-transparent"
+        }`}
+      >
+        <Text
+          className={
+            activeTab === "reviews"
+              ? "text-lg font-bold text-black"
+              : "text-lg text-gray-500"
+          }
         >
-          <Text
-            className={
-              activeTab === "reviews"
-                ? "text-lg font-bold text-black"
-                : "text-lg text-gray-500"
-            }
-          >
-            Reviews
-          </Text>
-        </TouchableOpacity>
-      }
+          Reviews
+        </Text>
+      </TouchableOpacity>
     </View>
   );
 };

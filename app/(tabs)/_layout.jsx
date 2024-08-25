@@ -3,6 +3,7 @@ import { Tabs } from "expo-router";
 import { View, Image, Text, StyleSheet, SafeAreaView } from "react-native";
 import icons from "../../constants/icons";
 import { useGlobalContext } from "../../context/GlobalProvider";
+import { StatusBar } from "expo-status-bar";
 
 const TabIcon = ({ icon, color, name, focused }) => (
   <View style={styles.iconContainer}>
@@ -18,8 +19,8 @@ const TabLayout = () => {
     <SafeAreaView style={styles.safeArea}>
       <Tabs
         screenOptions={{
-          tabBarActiveTintColor: "#F5F5F5",
-          tabBarInactiveTintColor: "#35424a",
+          tabBarActiveTintColor: "#f69f3d",
+          tabBarInactiveTintColor: "white",
           tabBarShowLabel: false,
           tabBarStyle: styles.tabBar,
         }}
@@ -63,12 +64,12 @@ const TabLayout = () => {
               <View
                 style={[
                   styles.postIconContainer,
-                  { backgroundColor: focused ? "#FFA001" : "gray" },
+                  { backgroundColor: focused ? "#f69f3d" : "#ffffff" },
                 ]}
               >
                 <TabIcon
                   icon={icons.plus}
-                  color="#FFF"
+                  color={focused ? "white" : "#f69f3d"}
                   name="Post"
                   focused={focused}
                 />
@@ -77,7 +78,7 @@ const TabLayout = () => {
             tabBarLabel: ({ focused }) => (
               <Text
                 style={{
-                  color: focused ? "#FFA001" : "#CDCDE0",
+                  color: focused ? "#EA9050" : "white",
                   marginTop: -20,
                 }}
               >
@@ -117,6 +118,7 @@ const TabLayout = () => {
           }}
         />
       </Tabs>
+      <StatusBar style="dark" />
     </SafeAreaView>
   );
 };
@@ -130,7 +132,18 @@ const styles = StyleSheet.create({
     backgroundColor: "#161622",
     borderTopWidth: 1,
     borderTopColor: "#232533",
-    height: 70, // Decrease the height of the nav
+    height: 67,
+    borderRadius: 15,
+    marginHorizontal: 10,
+    position: "absolute",
+    bottom: 12,
+    left: 7,
+    right: 7,
+    elevation: 5,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
   },
   iconContainer: {
     alignItems: "center",
@@ -151,11 +164,13 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     justifyContent: "center",
     alignItems: "center",
-    marginTop: -60, // Adjust this value to center the circle
+    marginTop: -64,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 5 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
+    borderWidth: 2,
+    borderColor: "#f69f3d",
   },
 });
 

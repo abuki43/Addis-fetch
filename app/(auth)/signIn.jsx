@@ -10,24 +10,38 @@ import {
 import CustomButton from "../../components/CustomButton";
 import FormField from "../../components/FormField";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { signInWithEmailAndPassword } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore"; // Import getDoc
+import {
+  signInWithEmailAndPassword,
+  sendEmailVerification,
+} from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "../../config/firebaseConfig";
 import { useRouter } from "expo-router";
 import { useGlobalContext } from "../../context/GlobalProvider";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import logo from "../../assets/images/logo.png";
+// import logo from "../../assets/images/logo.png";
+import newImage from "../../assets/images/IMAGE3.png";
 
 const signIn = () => {
-  const { setUser, setIsLogged, user } = useGlobalContext();
-
+  const { setUser, setIsLogged } = useGlobalContext();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
+  const validateInputs = () => {
+    if (!email || !password) {
+      Alert.alert("Validation Error", "Email and password are required.");
+      return false;
+    }
+    return true;
+  };
+
   const handleSignIn = async () => {
+    if (!validateInputs()) return;
+
     setIsLoading(true);
+
     try {
       const userCredential = await signInWithEmailAndPassword(
         auth,
@@ -35,59 +49,102 @@ const signIn = () => {
         password
       );
 
-      // Fetch complete user data (including fullname)
-      const userDocRef = doc(db, "users", userCredential.user.uid);
-      const userDoc = await getDoc(userDocRef); // Use getDoc to fetch the document
+      const user = userCredential.user;
+
+      if (!user.emailVerified) {
+        // Prompt the user to verify their email
+        Alert.alert(
+          "Email not verified",
+          "Your email is not verified. Check you email to verify",
+          [
+            {
+              text: "resend",
+              onPress: async () => {
+                try {
+                  // const actionCodeSettings = {
+                  //   url: "addis-fetch://verify", // Custom scheme URL
+                  //   handleCodeInApp: true,
+                  // };
+                  await sendEmailVerification(userCredential.user);
+                  Alert.alert(
+                    "Verification Email Sent",
+                    "A verification email has been sent to your email address. Please verify your email "
+                  );
+                  await finalizeSignIn(user);
+                } catch (verificationError) {
+                  Alert.alert("Error", verificationError.message);
+                }
+              },
+            },
+            {
+              text: "ok",
+              onPress: async () => {
+                // Allow the user to continue without verification
+                await finalizeSignIn(user);
+              },
+              style: "cancel",
+            },
+          ]
+        );
+      } else {
+        await finalizeSignIn(user);
+      }
+    } catch (error) {
+      console.log("error", error);
+      let errorMessage;
+      switch (error.code) {
+        case "auth/invalid-email":
+          errorMessage = "The email address is badly formatted.";
+          break;
+        case "auth/user-not-found":
+          errorMessage = "No user found with this email.";
+          break;
+        case "auth/invalid-credential":
+          errorMessage = "Incorrect inputs. Please try again.";
+          break;
+        case "auth/network-request-failed":
+          errorMessage = "Please check your network";
+        default:
+          errorMessage = "An unknown error occurred. Please try again later.";
+      }
+      Alert.alert("Sign-in failed", errorMessage);
+    }
+
+    setIsLoading(false);
+  };
+
+  const finalizeSignIn = async (user) => {
+    setIsLoading(true);
+    try {
+      const userDocRef = doc(db, "users", user.uid);
+      const userDoc = await getDoc(userDocRef);
       const userData = userDoc.data();
 
-      setUser({ ...userCredential.user, ...userData }); // Merge user data
+      setUser({ ...user, ...userData });
 
-      console.log("user", userData, userCredential.user.uid);
+      await AsyncStorage.setItem(
+        "userData",
+        JSON.stringify({ ...user, ...userData })
+      );
 
-      // Add an authentication state change listener
-      auth.onAuthStateChanged((u) => {
-        if (u) {
-          // User is signed in, save the user object to AsyncStorage
-          console.log("User is signed in");
-          AsyncStorage.setItem(
-            "userData",
-            JSON.stringify({ ...userCredential.user, ...userData })
-          )
-            .then(() => {
-              console.log("User data saved to AsyncStorage");
-            })
-            .catch((error) => {
-              console.error("Error saving user data to AsyncStorage:", error);
-            });
-        } else {
-          // User is signed out, remove user data from AsyncStorage
-          AsyncStorage.removeItem("userData")
-            .then(() => {
-              console.log("User dataData removed from AsyncStorage");
-            })
-            .catch((error) => {
-              console.error(
-                "Error removing user data from AsyncStorage:",
-                error
-              );
-            });
-        }
-      }); // Use userData to access the fullname
       setIsLogged(true);
       Alert.alert(
         "Sign-in successful",
-        `Welcome back, ${userCredential.user.email}`
+        `Welcome back, ${userData.fullname || user.email}`
       );
-      router.push("/Travlers");
+      router.replace("/Travlers");
     } catch (error) {
-      Alert.alert("Sign-in failed", error.message);
-      console.log(error);
+      console.error("Error during finalizing sign-in:", error);
+      Alert.alert(
+        "Error",
+        "An error occurred while signing in. Please try again."
+      );
     }
     setIsLoading(false);
   };
 
   return (
-    <SafeAreaView className="h-full flex-1 bg-slate-50">
+    <SafeAreaView className="h-full flex-1 bg-gray-100 ">
       <ScrollView
         contentContainerStyle={{
           flexGrow: 1,
@@ -96,8 +153,8 @@ const signIn = () => {
       >
         <View className="flex-1 justify-center px-6 py-8">
           <View className="mb-8 items-center">
-            <Image source={logo} className="w-20 h-20" />
-            <Text className="text-Primary text-3xl font-bold mt-4">
+            <Image source={newImage} className="w-24 h-24" />
+            <Text className="text-Primary text-3xl font-bold mt-2">
               Sign In
             </Text>
           </View>
@@ -123,31 +180,6 @@ const signIn = () => {
             containerStyles="mt-6 bg-Primary"
             textStyles="text-white"
           />
-
-          <Text className="text-center text-gray-600 mt-4">
-            or sign in with
-          </Text>
-
-          <View className="flex flex-row justify-between mt-6">
-            <TouchableOpacity className="bg-red-500 flex-1 py-3 rounded-lg mr-2 flex flex-row items-center justify-center">
-              <Image
-                source={{
-                  uri: "https://img.icons8.com/color/48/000000/google-logo.png",
-                }}
-                className="w-6 h-6 mr-2"
-              />
-              <Text className="text-white text-lg font-semibold">Google</Text>
-            </TouchableOpacity>
-            <TouchableOpacity className="bg-blue-600 flex-1 py-3 rounded-lg ml-2 flex flex-row items-center justify-center">
-              <Image
-                source={{
-                  uri: "https://img.icons8.com/ios-filled/50/ffffff/facebook-new.png",
-                }}
-                className="w-6 h-6 mr-2"
-              />
-              <Text className="text-white text-lg font-semibold">Facebook</Text>
-            </TouchableOpacity>
-          </View>
 
           <TouchableOpacity
             onPress={() => router.push("/signUp")}
