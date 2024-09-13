@@ -10,29 +10,15 @@ import {
   Modal,
 } from "react-native";
 import { Link } from "expo-router";
-import {
-  collection,
-  addDoc,
-  query,
-  where,
-  getDocs,
-  onSnapshot,
-  orderBy,
-  updateDoc,
-  doc,
-  serverTimestamp,
-} from "firebase/firestore";
-
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { auth, db, storage } from "../../config/firebaseConfig";
 import { useLocalSearchParams } from "expo-router";
+import { initiateOrContinueChat, handleSend, pickImage } from "../../lib/chat";
+import { auth } from "../../config/firebaseConfig";
 import {
   GiftedChat,
   Actions,
   Bubble,
   InputToolbar,
 } from "react-native-gifted-chat";
-import * as ImagePicker from "expo-image-picker";
 
 // there is some error on Gifted chat , found the below temp solution
 
@@ -49,181 +35,38 @@ const PrivateChat = () => {
   const [loading, setLoading] = useState(true);
   const [imageUploading, setImageUploading] = useState(false);
   const [error, setError] = useState(null);
-
-  const [selectedImage, setSelectedImage] = useState(null); // for the image popup || to view the image at larger size
+  const [selectedImage, setSelectedImage] = useState(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
 
   const user = auth.currentUser;
+
   useEffect(() => {
-    const initiateOrContinueChat = async () => {
-      if (!user || !UID) return;
+    const unsubscribe = initiateOrContinueChat(
+      UID,
+      user,
+      chatId,
+      setChatId,
+      setMessages,
+      setLoading,
+      setError
+    );
 
-      try {
-        if (!chatId) {
-          const chatsRef = collection(db, "chats");
-          const q = query(
-            chatsRef,
-            where("participants", "array-contains", user.uid)
-          );
-          const chatSnapshot = await getDocs(q);
-          let foundChatId = null;
-
-          chatSnapshot.forEach((doc) => {
-            const participants = doc.data().participants;
-            if (participants.includes(UID)) {
-              foundChatId = doc.id;
-            }
-          });
-
-          if (foundChatId) {
-            setChatId(foundChatId);
-          } else {
-            const newChatRef = await addDoc(chatsRef, {
-              participants: [user.uid, UID],
-              createdAt: new Date(),
-              unread: true,
-            });
-            setChatId(newChatRef.id);
-          }
-        }
-
-        if (chatId) {
-          const messagesRef = collection(db, "chats", chatId, "messages");
-          const q = query(messagesRef, orderBy("timestamp", "asc"));
-
-          const unsubscribeMessages = onSnapshot(
-            q,
-            (querySnapshot) => {
-              const messagesList = querySnapshot.docs.map((doc) => {
-                const data = doc.data();
-                console.log(data.timestamp);
-                return {
-                  _id: doc.id,
-                  text: data.text.startsWith("http") ? "" : data.text,
-                  image: data.text.startsWith("http") ? data.text : null,
-                  createdAt: data?.timestamp?.toDate() || new Date(),
-                  user: {
-                    _id: data.senderId,
-                  },
-                };
-              });
-
-              setMessages(
-                messagesList.sort((a, b) => a.createdAt - b.createdAt).reverse()
-              );
-
-              setLoading(false);
-
-              // Mark messages as read
-              updateDoc(doc(db, "chats", chatId), { unread: false });
-            },
-            (err) => {
-              setError("Error fetching messages");
-              console.error(err);
-              setLoading(false);
-            }
-          );
-
-          return () => {
-            unsubscribeMessages();
-          };
-        }
-      } catch (err) {
-        setError("Failed to initiate chat.");
-        Alert.alert("Error", "Failed to initiate chat.");
-        console.error(err);
-        setLoading(false);
-      }
-    };
-
-    initiateOrContinueChat();
+    return () =>
+      unsubscribe && typeof unsubscribe === "function" && unsubscribe();
   }, [chatId, UID, user]);
 
-  const handleSend = useCallback(
-    async (newMessages = []) => {
-      const [message] = newMessages;
-      try {
-        setImageUploading(true);
-
-        if (message.image) {
-          await addDoc(collection(db, "chats", chatId, "messages"), {
-            text: message.image,
-            senderId: user.uid,
-            timestamp: serverTimestamp(),
-          });
-        } else {
-          await addDoc(collection(db, "chats", chatId, "messages"), {
-            text: message.text,
-            senderId: user.uid,
-            timestamp: serverTimestamp(),
-          });
-        }
-        console.log("message sent");
-        setImageUploading(false);
-
-        const otherParticipantId = UID;
-        await updateDoc(doc(db, "chats", chatId), {
-          [`unread_${otherParticipantId}`]: true,
-          [`unread_${user.uid}`]: false,
-        });
-      } catch (err) {
-        setError("Error sending message");
-        console.error(err);
-        setImageUploading(false);
-      }
+  const onSend = useCallback(
+    (newMessages = []) => {
+      handleSend(newMessages, chatId, user, UID, setImageUploading, setError);
     },
-    [chatId, user]
+    [chatId, user, UID]
   );
 
-  const uploadImage = async (fileUri) => {
-    try {
-      const storageRef = ref(storage, `images/${new Date().toISOString()}`);
-
-      const response = await fetch(fileUri);
-      const blob = await response.blob();
-
-      await uploadBytes(storageRef, blob);
-
-      const downloadURL = await getDownloadURL(storageRef);
-      return downloadURL;
-    } catch (error) {
-      console.error("Error uploading image:", error);
-      throw error;
-    }
-  };
-
-  const pickImage = async () => {
-    try {
-      let result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        quality: 1,
-      });
-
-      if (!result.canceled) {
-        setImageUploading(true);
-
-        const imageUrl = await uploadImage(result.assets[0].uri);
-        if (imageUrl) {
-          handleSend([
-            {
-              _id: new Date().getTime(),
-              image: imageUrl,
-              user: { _id: user.uid },
-            },
-          ]);
-        }
-      }
-    } catch (error) {
-      Alert.alert("Error", "Failed to upload image.");
-      console.error(error);
-    } finally {
-      setImageUploading(false);
-    }
+  const onPickImage = async () => {
+    await pickImage(onSend, setImageUploading);
   };
 
   const handleImageClick = (imageUri) => {
-    console.log("Image Clicked:", imageUri);
     setSelectedImage(imageUri);
     setIsModalVisible(true);
   };

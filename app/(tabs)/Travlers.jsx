@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -9,155 +9,39 @@ import {
   FlatList,
   RefreshControl,
   SafeAreaView,
+  StyleSheet,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import PostCard from "../../components/TravelerCard";
-import {
-  collection,
-  getDocs,
-  query,
-  where,
-  limit,
-  startAfter,
-  orderBy,
-} from "firebase/firestore";
-import { db } from "../../config/firebaseConfig";
-import { StyleSheet } from "react-native";
-
-const ORDERS_BATCH_SIZE = 100;
-
-const useDebounce = (value, delay) => {
-  const [debouncedValue, setDebouncedValue] = useState(value);
-
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedValue(value);
-    }, delay);
-    return () => clearTimeout(handler);
-  }, [value, delay]);
-
-  return debouncedValue;
-};
+import PostCard from "../../components/postCard";
+import usePosts from "../../lib/fetchPosts";
 
 const TravlersScreen = () => {
-  const [posts, setPosts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [searchVisible, setSearchVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [lastVisible, setLastVisible] = useState(null);
-  const [hasMore, setHasMore] = useState(true);
-  const flatListRef = useRef(null);
-  const debouncedSearchQuery = useDebounce(searchQuery, 300);
-  const [filteredPosts, setFilteredPosts] = useState([]);
-  const [isSearchResults, setIsSearchResults] = useState(false);
-  const [error, setError] = useState("");
 
-  const fetchPosts = useCallback(
-    async (startAfterDoc = null, clearExisting = false) => {
-      if (!isSearchResults || clearExisting) {
-        setLoading(true);
-        setError(""); // Clear previous errors
-        try {
-          let postsQuery = query(
-            collection(db, "posts"),
-            where("postType", "==", "traveler"),
-            orderBy("timestamp", "desc"),
-            limit(ORDERS_BATCH_SIZE)
-          );
+  const {
+    posts,
+    filteredPosts,
+    setFilteredPosts,
+    loading,
+    refreshing,
+    error,
+    hasMore,
+    onRefresh,
+    handleLoadMore,
+    applyFilters,
+  } = usePosts("traveler", searchQuery);
 
-          if (startAfterDoc) {
-            postsQuery = query(postsQuery, startAfter(startAfterDoc));
-          }
-
-          const querySnapshot = await getDocs(postsQuery);
-          const postsData = querySnapshot.docs.map((doc) => ({
-            id: doc.id,
-            ...doc.data(),
-          }));
-
-          if (postsData.length < ORDERS_BATCH_SIZE) {
-            setHasMore(false);
-          }
-
-          setPosts((prevPosts) =>
-            clearExisting ? postsData : [...prevPosts, ...postsData]
-          );
-          setLastVisible(querySnapshot.docs[querySnapshot.docs.length - 1]);
-        } catch (error) {
-          console.error("Error fetching posts:", error);
-          if (error.message.includes("network")) {
-            setError("Network error. Please check your internet connection.");
-          } else {
-            setError("An error occurred while fetching posts.");
-          }
-        } finally {
-          setLoading(false);
-        }
-      }
-    },
-    [isSearchResults]
-  );
-
-  useEffect(() => {
-    if (!isSearchResults && lastVisible === null) {
-      fetchPosts(null, true);
-    }
-  }, [fetchPosts, isSearchResults, lastVisible]);
-
-  const onRefresh = useCallback(async () => {
-    setRefreshing(true);
-    setLastVisible(null);
-    setHasMore(true);
-    await fetchPosts(null, true);
-    setRefreshing(false);
-  }, [fetchPosts]);
-
-  const handleLoadMore = useCallback(() => {
-    if (hasMore && !loading && !isSearchResults) {
-      fetchPosts(lastVisible);
-    }
-  }, [hasMore, loading, lastVisible, fetchPosts, isSearchResults]);
-
-  const applyFilters = () => {
-    const results = posts.filter((post) => {
-      const description = post.description
-        ? post.description.toLowerCase()
-        : "";
-      const category = post.category ? post.category.toLowerCase() : "";
-      const fromLocation = post.fromLocation
-        ? post.fromLocation.toLowerCase()
-        : "";
-      const toLocation = post.toLocation ? post.toLocation.toLowerCase() : "";
-
-      const matchQuery =
-        description.includes(debouncedSearchQuery.toLowerCase()) ||
-        category.includes(debouncedSearchQuery.toLowerCase()) ||
-        fromLocation.includes(debouncedSearchQuery.toLowerCase()) ||
-        toLocation.includes(debouncedSearchQuery.toLowerCase());
-
-      return matchQuery;
-    });
-
-    setFilteredPosts(results);
-    setIsSearchResults(true);
+  const handleApplyFilters = () => {
+    applyFilters(searchQuery);
     setSearchVisible(false);
   };
 
-  const handleResetSearch = async () => {
+  const handleResetSearch = () => {
     setSearchQuery("");
-    setIsSearchResults(false);
-    setFilteredPosts([]);
-    setLastVisible(null);
-    setHasMore(true);
-    await fetchPosts(null, true); // Re-fetch posts for the initial view
+    setSearchVisible(false);
+    setFilteredPosts(posts);
   };
-
-  useEffect(() => {
-    if (!isSearchResults) {
-      setFilteredPosts(posts);
-    }
-  }, [posts, isSearchResults]);
 
   return (
     <SafeAreaView className="flex-1 bg-gray-100 pb-16">
@@ -185,39 +69,40 @@ const TravlersScreen = () => {
       ) : filteredPosts.length === 0 && !loading ? (
         <View className="flex-1 justify-center items-center">
           <Text className="text-lg text-gray-600">No post found</Text>
-          {isSearchResults && (
+          {searchQuery && (
             <TouchableOpacity
               onPress={handleResetSearch}
-              className="flex-row items-center mt-4"
+              className="flex-row items-center mt-4 mb-2 "
             >
               <Ionicons name="arrow-back" size={24} color="black" />
-              <Text className="ml-2 text-gray-600">Back to All Posts</Text>
+              <Text className="ml-2 mb-4 text-gray-600">
+                Back to All Orders
+              </Text>
             </TouchableOpacity>
           )}
           <TouchableOpacity
             onPress={onRefresh}
             className="bg-orange-500 rounded-lg p-2 mt-4"
           >
-            <Text className="text-white font-bold">Refresh</Text>
+            <Text className="text-white">Refresh</Text>
           </TouchableOpacity>
         </View>
       ) : (
         <>
-          {isSearchResults && (
+          {searchQuery && (
             <View className="pl-4 bg-gray-100">
               <TouchableOpacity
                 onPress={handleResetSearch}
-                className="flex-row items-center rounded-lg"
+                className="flex-row items-center rounded-lg mb-2"
               >
                 <Ionicons name="arrow-back" size={24} color="black" />
-                <Text className="ml-2 text-gray-600">Back to All Posts</Text>
+                <Text className="ml-2 text-gray-600">Back to All Orders</Text>
               </TouchableOpacity>
             </View>
           )}
           <FlatList
-            ref={flatListRef}
             data={filteredPosts}
-            keyExtractor={(item, index) => `${index}-${item.id}`}
+            keyExtractor={(item) => item.id}
             renderItem={({ item }) => <PostCard post={item} />}
             contentContainerStyle={styles.flatlistStyle}
             onEndReached={handleLoadMore}
@@ -253,12 +138,11 @@ const TravlersScreen = () => {
               onChangeText={setSearchQuery}
               className="border border-gray-300 rounded-lg p-2 mb-2"
             />
-
             <TouchableOpacity
-              onPress={applyFilters}
+              onPress={handleApplyFilters}
               className="bg-Secondary p-2 rounded-lg items-center"
             >
-              <Text className="text-white">Apply Filters</Text>
+              <Text className="text-white">Search</Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() => setSearchVisible(false)}

@@ -7,19 +7,12 @@ import {
   FlatList,
   RefreshControl,
 } from "react-native";
-import {
-  collection,
-  query,
-  where,
-  onSnapshot,
-  doc,
-  getDoc,
-  getDocs,
-  updateDoc,
-} from "firebase/firestore";
 import { useRouter } from "expo-router";
 import { useGlobalContext } from "../../context/GlobalProvider";
-import { db } from "../../config/firebaseConfig";
+import {
+  fetchConversations,
+  handleConversationPress,
+} from "../../lib/messages";
 
 const Messages = () => {
   const { user } = useGlobalContext();
@@ -29,95 +22,28 @@ const Messages = () => {
   const [error, setError] = useState(null);
   const router = useRouter();
 
-  // Optimized fetchConversations function
-  const fetchConversations = useCallback(() => {
-    if (!user) {
-      setLoading(false);
-      return;
-    }
-
-    const conversationsQuery = query(
-      collection(db, "chats"),
-      where("participants", "array-contains", user.uid)
+  // Initialize fetching conversations
+  useEffect(() => {
+    const unsubscribe = fetchConversations(
+      user,
+      setConversations,
+      setLoading,
+      setError,
+      setRefreshing
     );
-
-    const unsubscribe = onSnapshot(
-      conversationsQuery,
-      async (querySnapshot) => {
-        try {
-          const conversationsList = await Promise.all(
-            querySnapshot.docs.map(async (conversationDoc) => {
-              const data = conversationDoc.data();
-              const otherParticipantId = data.participants.find(
-                (participant) => participant !== user.uid
-              );
-
-              const otherParticipantDoc = await getDoc(
-                doc(db, "users", otherParticipantId)
-              );
-
-              if (!otherParticipantDoc.exists()) {
-                throw new Error("User data not found");
-              }
-
-              const otherParticipantData = otherParticipantDoc.data();
-              const isUnread = data[`unread_${user.uid}`] || false;
-
-              return {
-                id: conversationDoc.id,
-                otherUserId: otherParticipantId,
-                fullname: otherParticipantData.fullname || "Unknown",
-                avatar:
-                  otherParticipantData.avatar ||
-                  "https://via.placeholder.com/150",
-                unread: isUnread,
-              };
-            })
-          );
-          setConversations(conversationsList.reverse());
-        } catch (err) {
-          console.error("Error fetching conversations:", err.message);
-          setError("Failed to load conversations.");
-        } finally {
-          setLoading(false);
-          setRefreshing(false);
-        }
-      },
-      (err) => {
-        console.error("Error in onSnapshot:", err.message);
-        setError("Error fetching conversations");
-        setLoading(false);
-        setRefreshing(false);
-      }
-    );
-
-    return unsubscribe;
+    return () => unsubscribe && unsubscribe();
   }, [user]);
 
-  useEffect(() => {
-    const unsubscribe = fetchConversations();
-    return () => unsubscribe && unsubscribe();
-  }, [fetchConversations]);
-
-  const handleConversationPress = async (
-    conversationId,
-    otherUserId,
-    fullname
-  ) => {
-    try {
-      router.push(`/PrivateChat?UID=${otherUserId}&fullname=${fullname}`);
-      await updateDoc(doc(db, "chats", conversationId), {
-        [`unread_${user.uid}`]: false,
-      });
-    } catch (err) {
-      console.error("Error updating unread status:", err.message);
-      setError("Failed to update conversation status.");
-    }
-  };
-
+  // Handle refresh action
   const onRefresh = () => {
     setRefreshing(true);
-    fetchConversations();
+    fetchConversations(
+      user,
+      setConversations,
+      setLoading,
+      setError,
+      setRefreshing
+    );
   };
 
   // Render loading state
@@ -134,7 +60,7 @@ const Messages = () => {
       <View className="flex-1 justify-center items-center bg-gray-100">
         <Text className="text-red-500">{error}</Text>
         <TouchableOpacity
-          className="mt-4 px-4 py-2 bg-primary rounded-lg"
+          className="mt-4 px-4 py-2 bg-Secondary rounded-lg"
           onPress={onRefresh}
         >
           <Text className="text-white font-bold">Try Again</Text>
@@ -164,9 +90,9 @@ const Messages = () => {
     <View className="flex-1 p-4 bg-gray-100">
       {conversations.length === 0 ? (
         <View className="flex-1 justify-center items-center">
-          <Text className="text-lg text-gray-600">No converstation yet.</Text>
+          <Text className="text-lg text-gray-600">No conversations yet.</Text>
           <TouchableOpacity
-            onPress={fetchConversations}
+            onPress={onRefresh}
             className="bg-orange-500 rounded-lg p-2 mt-4"
           >
             <Text className="text-white font-bold">Refresh</Text>
@@ -183,7 +109,10 @@ const Messages = () => {
                 handleConversationPress(
                   item.id,
                   item.otherUserId,
-                  item.fullname
+                  item.fullname,
+                  user,
+                  router,
+                  setError
                 )
               }
             >

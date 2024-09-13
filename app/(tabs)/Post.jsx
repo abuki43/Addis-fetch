@@ -101,7 +101,7 @@ const PostScreen = () => {
         contactInfo,
         creatorUid: user?.uid,
         timestamp: new Date(),
-        username: user.displayName,
+        username: user?.fullname,
       };
 
       await addDoc(collection(db, "posts"), postData);

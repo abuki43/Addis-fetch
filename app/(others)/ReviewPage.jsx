@@ -23,12 +23,6 @@ const ReviewPage = () => {
     }
 
     try {
-      console.log(
-        "reviewedPersonId",
-        reviewedPersonId,
-        user.uid,
-        user.fullname
-      );
       setLoading(true);
       await addDoc(collection(db, "reviews"), {
         reviewedPersonId,

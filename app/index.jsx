@@ -10,13 +10,8 @@ import {
 } from "react-native";
 import { Redirect, router } from "expo-router";
 import Swiper from "react-native-swiper";
-import { CustomButton } from "../components/CustomButton";
-import { StatusBar } from "expo-status-bar";
 
-// import logo from "../assets/images/logo.png";
-// import secondImage from "../assets/images/secondImage.png";
-// import thirdImage from "../assets/images/thirdImage1.png";
-// import fourthImage from "../assets/images/fourthImage.png";
+import { StatusBar } from "expo-status-bar";
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useGlobalContext } from "../context/GlobalProvider";
@@ -45,7 +40,6 @@ const OnboardingScreen = () => {
     const fetchUser = async () => {
       try {
         const user = await AsyncStorage.getItem("userData");
-        console.log("user", user);
         if (user) {
           try {
             const userData = JSON.parse(user);

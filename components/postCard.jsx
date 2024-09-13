@@ -10,11 +10,50 @@ import {
 import { Image } from "expo-image";
 import { Link, useRouter } from "expo-router";
 import { useGlobalContext } from "../context/GlobalProvider";
+import { doc, deleteDoc } from "firebase/firestore";
+import { db } from "../config/firebaseConfig"; // Adjust the path as needed
+import { Entypo } from "@expo/vector-icons"; // Import the icon you prefer
 
-const PostCard = ({ post }) => {
+const PostCard = ({ post, isProfileView, setPosts }) => {
+  // isProfileView is a boolean that determines if the user is viewing the post on the profile tab
   const router = useRouter();
   const { user } = useGlobalContext();
   const [imageModalVisible, setImageModalVisible] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const handleDelete = async () => {
+    Alert.alert(
+      "Confirm Deletion",
+      "Are you sure you want to delete this post?",
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              setLoading(true);
+              const postDocRef = doc(db, "posts", post.id);
+              await deleteDoc(postDocRef);
+              Alert.alert("Success", "Post deleted successfully!");
+              setPosts((prevPosts) =>
+                prevPosts.filter((prevPost) => prevPost.id !== post.id)
+              );
+            } catch (error) {
+              Alert.alert("Error", "Failed to delete post.");
+              console.error("Error deleting post: ", error);
+            } finally {
+              setLoading(false);
+            }
+          },
+        },
+      ],
+      { cancelable: true }
+    );
+  };
 
   const handleContact = () => {
     if (!user) {
@@ -42,7 +81,9 @@ const PostCard = ({ post }) => {
   return (
     <>
       <View
-        className="bg-white rounded-lg p-2 shadow-lg mb-6 overflow-hidden transform transition duration-300 hover:scale-105 hover:shadow-2xl"
+        className={`bg-white rounded-lg p-2 shadow-lg mb-6 overflow-hidden transform transition duration-300 hover:scale-105 hover:shadow-2xl ${
+          loading ? "opacity-70" : ""
+        }`}
         style={styles.Card}
       >
         {post.image && (
@@ -81,7 +122,21 @@ const PostCard = ({ post }) => {
               Price: ${post.price}
             </Text>
           </View>
-          {post.creatorUid != user?.uid && (
+
+          {post.creatorUid === user?.uid && isProfileView && (
+            <View className="flex-row items-center">
+              <TouchableOpacity
+                className="bg-Primary rounded-lg p-3 mr-2"
+                onPress={handleDelete}
+                disabled={loading}
+              >
+                <Text className="text-white text-center font-bold">
+                  {loading ? "Deleting..." : "Delete"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
+          {post.creatorUid !== user?.uid && (
             <TouchableOpacity
               className="bg-Primary rounded-lg p-3"
               onPress={handleContact}
