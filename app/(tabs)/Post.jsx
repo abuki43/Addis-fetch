@@ -123,131 +123,136 @@ const PostScreen = () => {
   };
 
   return (
-    <ScrollView className="p-5 bg-white pb-12">
-      <Text className="text-2xl font-bold text-center mb-5">
-        Create a New Post
-      </Text>
-      <View className="mb-5">
-        <Text className="text-lg mb-2 text-gray-700">Description</Text>
-        <TextInput
-          value={description}
-          onChangeText={setDescription}
-          className="border border-gray-300 p-3 rounded text-base h-32"
-          placeholder="Enter description"
-          multiline
-        />
-      </View>
-      <View className="mb-5">
-        <Text className="text-lg mb-2 text-gray-700">Post Type</Text>
-        <View className="flex-row justify-between">
-          <TouchableOpacity
-            onPress={() => setPostType("order")}
-            className={`flex-1 items-center p-3 rounded border ${
-              postType === "order"
-                ? "bg-Primary border-Primary"
-                : "bg-gray-200 border-gray-300"
-            } mx-1`}
-          >
-            <Text
-              className={`${
-                postType === "order" ? "text-white" : "text-black"
-              } text-base`}
+    <ScrollView className="p-5 bg-white pb-12 ">
+      <View className="md:w-[75%] md:mx-auto">
+        <Text className="text-2xl font-bold text-center mb-5">
+          Create a New Post
+        </Text>
+        <View className="mb-5">
+          <Text className="text-lg mb-2 text-gray-700">Description</Text>
+          <TextInput
+            value={description}
+            onChangeText={setDescription}
+            className="border border-gray-300 p-3 rounded text-base h-32"
+            placeholder="Enter description"
+            multiline
+          />
+        </View>
+        <View className="mb-5">
+          <Text className="text-lg mb-2 text-gray-700">Post Type</Text>
+          <View className="flex-row justify-between">
+            <TouchableOpacity
+              onPress={() => setPostType("order")}
+              className={`flex-1 items-center p-3 rounded border ${
+                postType === "order"
+                  ? "bg-Primary border-Primary"
+                  : "bg-gray-200 border-gray-300"
+              } mx-1`}
             >
-              Order
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => setPostType("traveler")}
-            className={`flex-1 items-center p-3 rounded border ${
-              postType === "traveler"
-                ? "bg-Primary border-Primary"
-                : "bg-gray-200 border-gray-300"
-            } mx-1`}
-          >
-            <Text
-              className={`${
-                postType === "traveler" ? "text-white" : "text-black"
-              } text-base`}
+              <Text
+                className={`${
+                  postType === "order" ? "text-white" : "text-black"
+                } text-base`}
+              >
+                Order
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => setPostType("traveler")}
+              className={`flex-1 items-center p-3 rounded border ${
+                postType === "traveler"
+                  ? "bg-Primary border-Primary"
+                  : "bg-gray-200 border-gray-300"
+              } mx-1`}
             >
-              Traveler
-            </Text>
+              <Text
+                className={`${
+                  postType === "traveler" ? "text-white" : "text-black"
+                } text-base`}
+              >
+                Traveler
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+        <View className="mb-5">
+          <Text className="text-lg mb-2 text-gray-700">Category</Text>
+          <TextInput
+            value={category}
+            onChangeText={setCategory}
+            className="border border-gray-300 p-3 rounded text-base"
+            placeholder="Enter category"
+          />
+        </View>
+        <View className="mb-5">
+          <Text className="text-lg mb-2 text-gray-700">Price</Text>
+          <TextInput
+            value={price}
+            onChangeText={setPrice}
+            className="border border-gray-300 p-3 rounded text-base"
+            placeholder="Enter price"
+          />
+        </View>
+        <View className="mb-5">
+          <Text className="text-lg mb-2 text-gray-700">
+            {postType === "traveler"
+              ? "From Where You Are Coming"
+              : "Where You Want the Item From"}
+          </Text>
+          <TextInput
+            value={locationFrom}
+            onChangeText={setLocationFrom}
+            className="border border-gray-300 p-3 rounded text-base"
+            placeholder="Enter location"
+          />
+        </View>
+        <View className="mb-5">
+          <Text className="text-lg mb-2 text-gray-700">
+            {postType === "traveler"
+              ? "To Where You Are Going"
+              : "Where You Live"}
+          </Text>
+          <TextInput
+            value={locationTo}
+            onChangeText={setLocationTo}
+            className="border border-gray-300 p-3 rounded text-base"
+            placeholder="Enter location"
+          />
+        </View>
+        <View className="mb-5">
+          <Text className="text-lg mb-2 text-gray-700">Image</Text>
+          <TouchableOpacity
+            onPress={handleImagePick}
+            className="border border-gray-300 p-3 rounded items-center justify-center h-40 mt-2"
+          >
+            {image ? (
+              <Image
+                source={{ uri: image }}
+                className="w-full h-full rounded"
+              />
+            ) : (
+              <Ionicons name="camera" size={32} color="gray" />
+            )}
           </TouchableOpacity>
         </View>
-      </View>
-      <View className="mb-5">
-        <Text className="text-lg mb-2 text-gray-700">Category</Text>
-        <TextInput
-          value={category}
-          onChangeText={setCategory}
-          className="border border-gray-300 p-3 rounded text-base"
-          placeholder="Enter category"
-        />
-      </View>
-      <View className="mb-5">
-        <Text className="text-lg mb-2 text-gray-700">Price</Text>
-        <TextInput
-          value={price}
-          onChangeText={setPrice}
-          className="border border-gray-300 p-3 rounded text-base"
-          placeholder="Enter price"
-        />
-      </View>
-      <View className="mb-5">
-        <Text className="text-lg mb-2 text-gray-700">
-          {postType === "traveler"
-            ? "From Where You Are Coming"
-            : "Where You Want the Item From"}
-        </Text>
-        <TextInput
-          value={locationFrom}
-          onChangeText={setLocationFrom}
-          className="border border-gray-300 p-3 rounded text-base"
-          placeholder="Enter location"
-        />
-      </View>
-      <View className="mb-5">
-        <Text className="text-lg mb-2 text-gray-700">
-          {postType === "traveler"
-            ? "To Where You Are Going"
-            : "Where You Live"}
-        </Text>
-        <TextInput
-          value={locationTo}
-          onChangeText={setLocationTo}
-          className="border border-gray-300 p-3 rounded text-base"
-          placeholder="Enter location"
-        />
-      </View>
-      <View className="mb-5">
-        <Text className="text-lg mb-2 text-gray-700">Image</Text>
-        <TouchableOpacity
-          onPress={handleImagePick}
-          className="border border-gray-300 p-3 rounded items-center justify-center h-40 mt-2"
-        >
-          {image ? (
-            <Image source={{ uri: image }} className="w-full h-full rounded" />
-          ) : (
-            <Ionicons name="camera" size={32} color="gray" />
-          )}
-        </TouchableOpacity>
-      </View>
-      <View className="mb-5">
-        <Text className="text-lg mb-2 text-gray-700">Contact Info</Text>
-        <TextInput
-          value={contactInfo}
-          onChangeText={setContactInfo}
-          className="border border-gray-300 p-3 rounded text-base"
-          placeholder="Enter contact info"
-        />
-      </View>
+        <View className="mb-5">
+          <Text className="text-lg mb-2 text-gray-700">Contact Info</Text>
+          <TextInput
+            value={contactInfo}
+            onChangeText={setContactInfo}
+            className="border border-gray-300 p-3 rounded text-base"
+            placeholder="Enter contact info"
+          />
+        </View>
 
-      <CustomButton
-        title="Create post"
-        handlePress={handleSubmit}
-        isLoading={isLoading}
-        containerStyles="mt-6 bg-Primary mb-[149px]"
-        textStyles="text-white"
-      />
+        <CustomButton
+          title="Create post"
+          handlePress={handleSubmit}
+          isLoading={isLoading}
+          containerStyles="mt-6 bg-Primary mb-[149px]"
+          textStyles="text-white"
+        />
+      </View>
     </ScrollView>
   );
 };

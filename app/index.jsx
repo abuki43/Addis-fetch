@@ -46,7 +46,7 @@ const OnboardingScreen = () => {
             setUser(userData);
             router.push("/Travlers");
           } catch (error) {
-            console.error("Error parsing user data from AsyncStorage:", error);
+            console.log("Error parsing user data from AsyncStorage:", error);
             // Handle the case where the user data is not a valid JSON string
           }
         }

@@ -11,16 +11,18 @@ import {
 } from "react-native";
 import { Link } from "expo-router";
 import { useLocalSearchParams } from "expo-router";
-import { initiateOrContinueChat, handleSend, pickImage } from "../../lib/chat";
-import { auth } from "../../config/firebaseConfig";
 import {
   GiftedChat,
   Actions,
   Bubble,
   InputToolbar,
 } from "react-native-gifted-chat";
-
-// there is some error on Gifted chat , found the below temp solution
+import { auth } from "../../config/firebaseConfig";
+import {
+  initiateOrContinueChat,
+  handleSend as sendChatMessage,
+  pickImage,
+} from "../../lib/chat";
 
 const error = console.error;
 console.error = (...args) => {
@@ -37,51 +39,49 @@ const PrivateChat = () => {
   const [error, setError] = useState(null);
   const [selectedImage, setSelectedImage] = useState(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
-
   const user = auth.currentUser;
 
   useEffect(() => {
-    const unsubscribe = initiateOrContinueChat(
-      UID,
+    initiateOrContinueChat(
       user,
+      UID,
       chatId,
       setChatId,
       setMessages,
       setLoading,
       setError
     );
-
-    return () =>
-      unsubscribe && typeof unsubscribe === "function" && unsubscribe();
   }, [chatId, UID, user]);
 
-  const onSend = useCallback(
-    (newMessages = []) => {
-      handleSend(newMessages, chatId, user, UID, setImageUploading, setError);
-    },
-    [chatId, user, UID]
+  const handleSend = useCallback(
+    (newMessages = []) =>
+      sendChatMessage(
+        newMessages,
+        chatId,
+        user,
+        UID,
+        setError,
+        setImageUploading
+      ),
+    [chatId, user]
   );
-
-  const onPickImage = async () => {
-    await pickImage(onSend, setImageUploading);
-  };
 
   const handleImageClick = (imageUri) => {
     setSelectedImage(imageUri);
     setIsModalVisible(true);
   };
 
+  console.log(user.uid);
+
   const renderActions = (props) => (
     <Actions
       {...props}
       containerStyle={styles.actionsContainer}
       options={{
-        ["Send Image"]: pickImage,
+        ["Send Image"]: () => pickImage(handleSend, setImageUploading, user),
       }}
       icon={() => (
-        <Text
-          className={`w-8 h-8 bg-Secondary text-white rounded-full text-center text-lg`}
-        >
+        <Text className="w-8 h-8 bg-Secondary text-white rounded-full text-center text-lg">
           +
         </Text>
       )}
@@ -92,35 +92,27 @@ const PrivateChat = () => {
     <InputToolbar
       {...props}
       containerStyle={styles.inputToolbar}
-      primaryStyle={styles.inputToolbarPrimary}
-      disabled={imageUploading} // Disable while uploading
+      disabled={imageUploading}
     />
   );
 
   const renderBubble = (props) => {
     if (props.currentMessage.image) {
       return (
-        <View>
-          <TouchableOpacity
-            onPress={() => {
-              handleImageClick(props.currentMessage.image);
-            }}
-          >
-            <Image
-              source={{ uri: props.currentMessage.image }}
-              style={styles.messageImage}
-            />
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity
+          onPress={() => handleImageClick(props.currentMessage.image)}
+        >
+          <Image
+            source={{ uri: props.currentMessage.image }}
+            style={styles.messageImage}
+          />
+        </TouchableOpacity>
       );
     }
     return (
       <Bubble
         {...props}
-        wrapperStyle={{
-          left: styles.leftBubble,
-          right: styles.rightBubble,
-        }}
+        wrapperStyle={{ left: styles.leftBubble, right: styles.rightBubble }}
       />
     );
   };
@@ -132,11 +124,12 @@ const PrivateChat = () => {
       </View>
     );
   }
+
   if (error) return <Text className="text-center text-red-500">{error}</Text>;
 
   return (
     <View className="flex-1 bg-white mt-6 px-1">
-      <View className="mt-3 mx-2 p-4 bg-[#e5e7eb]  rounded-lg flex ">
+      <View className="mt-3 mx-2 p-4 bg-[#e5e7eb] rounded-lg flex">
         <Link href={`/OthersProfile?UID=${UID}`} className="text-center">
           <Text className="text-xl font-bold text-slate-700 text-center">
             {fullname || "unknown"}
@@ -176,26 +169,11 @@ const PrivateChat = () => {
 
       <GiftedChat
         messages={messages}
-        onSend={handleSend}
+        onSend={(newMessages) => handleSend(newMessages)}
         user={{ _id: user.uid }}
-        renderUsernameOnMessage
         renderActions={renderActions}
-        renderBubble={renderBubble}
         renderInputToolbar={renderInputToolbar}
-        renderAvatar={({ currentMessage }) => {
-          const isCurrentUser = currentMessage.user._id === user.uid;
-          const initial = isCurrentUser
-            ? user.displayName.charAt(0).toUpperCase()
-            : fullname.charAt(0).toUpperCase();
-
-          return (
-            <View className="h-10 w-10 rounded-full bg-black justify-center items-center">
-              <Link href={`/OthersProfile?UID=${currentMessage?.user._id}`}>
-                <Text className="text-white text-lg font-bold">{initial}</Text>
-              </Link>
-            </View>
-          );
-        }}
+        renderBubble={renderBubble}
       />
     </View>
   );

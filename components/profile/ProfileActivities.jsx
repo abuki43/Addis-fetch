@@ -12,7 +12,7 @@ const ProfileActivities = (props) => {
   }, [props.posts]);
 
   return (
-    <View className="p-5 bg-white pb-11">
+    <View className="p-5 bg-white pb-11 md:w-3/4 md:mx-auto">
       <View style={styles.scrollContainer}>
         {posts.length === 0 || !posts ? (
           <Text className="text-center text-gray-500">No posts yet.</Text>

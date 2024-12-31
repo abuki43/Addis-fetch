@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity } from "react-native";
 
 const ProfileTabs = ({ activeTab, setActiveTab, isOwner }) => {
   return (
-    <View className="flex-row justify-around bg-white shadow-md py-2 rounded-b-lg">
+    <View className="flex-row justify-around bg-white shadow-md py-2 rounded-b-lg md:my-4 md:w-3/4 md:mx-auto">
       <TouchableOpacity
         onPress={() => setActiveTab("info")}
         className={`py-2 px-4 rounded-lg ${

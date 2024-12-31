@@ -6,6 +6,7 @@ import {
   Image,
   ScrollView,
   Alert,
+  useWindowDimensions,
 } from "react-native";
 import CustomButton from "../../components/CustomButton";
 import FormField from "../../components/FormField";
@@ -24,17 +25,30 @@ const signUp = () => {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
+  // Get screen width to adjust styles dynamically
+  const { width } = useWindowDimensions();
+  const isTablet = width >= 768;
+
   return (
     <SafeAreaView className="h-full flex-1 bg-gray-100">
       <ScrollView
         contentContainerStyle={{
           flexGrow: 1,
           justifyContent: "center",
+          paddingHorizontal: isTablet ? 64 : 16,
         }}
       >
-        <View className="flex-1 justify-center px-6 py-8">
+        <View
+          className="flex-1 justify-center px-6 py-8 "
+          style={{
+            alignSelf: "center", // Center contents horizontally
+            maxWidth: 550, // Limit content width on tablets
+            width: "100%", // Ensure responsiveness
+            paddingVertical: 16,
+          }}
+        >
           <View className="mb-8 items-center">
-            <Image source={newImage} className="w-24 h-24" />
+            <Image source={newImage} className="w-32 h-32" />
             <Text className="text-Primary text-3xl font-bold mt-2">
               Create an Account
             </Text>
@@ -90,7 +104,10 @@ const signUp = () => {
             onPress={() => router.push("/signIn")}
             className="mt-4"
           >
-            <Text className="text-center text-blue-500">
+            <Text
+              className="text-center text-blue-500"
+              style={{ fontSize: 16 }}
+            >
               Already have an account? Sign In
             </Text>
           </TouchableOpacity>

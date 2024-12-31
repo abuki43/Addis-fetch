@@ -20,18 +20,24 @@ const ProfileHeader = ({ user, isOwner, onEditPress, onMessagePress }) => {
 
   const handleLogOut = async () => {
     try {
-      await AsyncStorage.removeItem("userData");
-      router.replace("/");
       const auth = getAuth();
       await signOut(auth);
+    } catch (error) {
+      console.log("Error signing out: ", error);
+    }
+
+    try {
+      await AsyncStorage.removeItem("userData");
+      router.replace("/");
+      console.log("User signed out");
       setUser("");
     } catch (error) {
-      console.error("Error signing out: ", error);
+      console.log("Error removing user data from AsyncStorage:", error);
     }
   };
 
   return (
-    <View className="items-center py-3 bg-white shadow-lg rounded-b-2xl">
+    <View className="items-center py-3 bg-white shadow-lg rounded-b-2xl md:m-2">
       <Image
         source={{
           uri: user?.profilePicture || "https://placekitten.com/200/200",

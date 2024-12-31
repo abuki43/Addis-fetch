@@ -27,7 +27,7 @@ const ProfileInfo = ({
   }, [user]);
 
   return (
-    <ScrollView className="p-6 bg-white rounded-lg shadow-lg mb-10">
+    <ScrollView className="p-6 bg-white rounded-lg shadow-lg mb-10 md:w-3/4 md:mx-auto">
       <Text className="text-xl font-medium my-2">Full Name</Text>
       <TextInput
         value={info?.fullname}
@@ -45,8 +45,7 @@ const ProfileInfo = ({
       <Text className="text-xl font-medium my-2">Email</Text>
       <TextInput
         value={info?.email}
-        onChangeText={(text) => setInfo({ ...info, email: text })}
-        editable={isEditing && isOwner}
+        editable={false}
         className="text-lg p-3 bg-gray-100 rounded-lg my-2 shadow-inner"
       />
       <Text className="text-xl font-medium my-2">Phone</Text>
@@ -63,7 +62,13 @@ const ProfileInfo = ({
             title="Save"
             containerStyles="bg-Primary rounded-md mt-4 mb-10 px-6 py-3"
             textStyles="text-white font-semibold text-lg"
-            handlePress={() => saveProfile(info)}
+            handlePress={() => {
+              // Extract only the required fields from the `info` object
+              const { fullname, phoneNumber, bio } = info;
+              // Create a new object with the required fields
+              const filteredInfo = { fullname, phoneNumber, bio };
+              saveProfile(filteredInfo);
+            }}
           />
         ) : (
           <CustomButton

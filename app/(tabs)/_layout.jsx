@@ -126,7 +126,7 @@ const TabLayout = () => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#161622",
+    backgroundColor: "white",
   },
   tabBar: {
     backgroundColor: "#161622",

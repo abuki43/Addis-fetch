@@ -195,7 +195,7 @@ const ProfilePage = ({ isOwner, userID }) => {
   }
 
   return (
-    <ScrollView className="flex-1 bg-gray-100">
+    <ScrollView className="flex-1 bg-gray-100 ">
       <ProfileHeader
         user={currentUser}
         isOwner={isOwner}

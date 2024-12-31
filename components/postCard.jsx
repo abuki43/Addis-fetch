@@ -11,8 +11,7 @@ import { Image } from "expo-image";
 import { Link, useRouter } from "expo-router";
 import { useGlobalContext } from "../context/GlobalProvider";
 import { doc, deleteDoc } from "firebase/firestore";
-import { db } from "../config/firebaseConfig"; // Adjust the path as needed
-import { Entypo } from "@expo/vector-icons"; // Import the icon you prefer
+import { db } from "../config/firebaseConfig";
 
 const PostCard = ({ post, isProfileView, setPosts }) => {
   // isProfileView is a boolean that determines if the user is viewing the post on the profile tab
@@ -57,7 +56,7 @@ const PostCard = ({ post, isProfileView, setPosts }) => {
 
   const handleContact = () => {
     if (!user) {
-      Alert.alert("Error", "You need to be logged in to contact the user.");
+      Alert.alert("Info", "You need to be logged in to contact the user.");
       return;
     }
 

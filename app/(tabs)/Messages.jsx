@@ -104,7 +104,7 @@ const Messages = () => {
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
             <TouchableOpacity
-              className="p-4 bg-white shadow rounded-lg mb-2 flex-row items-center"
+              className="p-4 bg-white shadow rounded-lg mb-2 flex-row items-center md:w-3/4 md:ml-6 md:mt-2"
               onPress={() =>
                 handleConversationPress(
                   item.id,
@@ -116,7 +116,7 @@ const Messages = () => {
                 )
               }
             >
-              <View className="h-10 w-10 rounded-full mr-4 bg-[#f88a29] justify-center items-center">
+              <View className="h-10 w-10 rounded-full mr-4 bg-[#f88a29] justify-center items-center md:mb-3 ">
                 <Text className="text-white text-lg font-bold">
                   {item.fullname.charAt(0).toUpperCase()}
                 </Text>
