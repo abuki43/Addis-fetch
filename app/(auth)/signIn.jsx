@@ -22,38 +22,27 @@ const signIn = () => {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
-  // Get screen width to adjust styles dynamically
   const { width } = useWindowDimensions();
   const isTablet = width >= 768;
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#f3f4f6" }}>
+    <SafeAreaView className="flex-1 bg-gray-100">
       <ScrollView
+        className={`flex-1 grow ${isTablet ? "px-16" : "px-4"}`}
         contentContainerStyle={{
           flexGrow: 1,
           justifyContent: "center",
-          paddingHorizontal: isTablet ? 64 : 16, // Adjust padding for tablets
         }}
       >
         <View
-          style={{
-            flex: 1,
-            justifyContent: "center",
-            alignSelf: "center", // Center contents horizontally
-            maxWidth: 550, // Limit content width on tablets
-            width: "100%", // Ensure responsiveness
-            paddingVertical: 16,
-          }}
+          className={`flex-1 justify-center self-center w-full py-4 px-3
+            ${isTablet ? "max-w-[550px]" : ""} `}
         >
-          <View style={{ marginBottom: 32, alignItems: "center" }}>
+          <View className="mb-8 items-center">
             <Image source={newImage} className="w-32 h-32" />
             <Text
-              style={{
-                color: "#1e3a8a",
-                fontSize: isTablet ? 36 : 24, // Larger text for tablets
-                fontWeight: "bold",
-                marginTop: 8,
-              }}
+              className={`text-blue-900 font-bold mt-2
+                ${isTablet ? "text-4xl" : "text-2xl"}`}
             >
               Sign In
             </Text>
@@ -91,15 +80,12 @@ const signIn = () => {
           />
 
           <TouchableOpacity
+            className="mt-4"
             onPress={() => router.push("/signUp")}
-            style={{ marginTop: 16 }}
           >
             <Text
-              style={{
-                textAlign: "center",
-                color: "#3b82f6",
-                fontSize: isTablet ? 18 : 14, // Adjust font size for tablets
-              }}
+              className={`text-center text-blue-500
+                ${isTablet ? "text-lg" : "text-sm"}`}
             >
               Don't have an account? Sign Up
             </Text>

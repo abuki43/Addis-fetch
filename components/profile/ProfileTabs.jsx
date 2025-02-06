@@ -1,57 +1,42 @@
 import React from "react";
 import { View, Text, TouchableOpacity } from "react-native";
-
+import { Ionicons } from "@expo/vector-icons";
 const ProfileTabs = ({ activeTab, setActiveTab, isOwner }) => {
+  const tabs = [
+    { id: "info", label: "Info", icon: "person-outline" },
+    { id: "posts", label: "Posts", icon: "documents-outline" },
+    { id: "reviews", label: "Reviews", icon: "star-outline" },
+  ];
+
   return (
-    <View className="flex-row justify-around bg-white shadow-md py-2 rounded-b-lg md:my-4 md:w-3/4 md:mx-auto">
-      <TouchableOpacity
-        onPress={() => setActiveTab("info")}
-        className={`py-2 px-4 rounded-lg ${
-          activeTab === "info" ? "bg-[#f2bb94]" : "bg-transparent"
-        }`}
-      >
-        <Text
-          className={
-            activeTab === "info"
-              ? "text-lg font-bold text-black"
-              : "text-lg text-gray-500"
-          }
-        >
-          Info
-        </Text>
-      </TouchableOpacity>
-      <TouchableOpacity
-        onPress={() => setActiveTab("posts")}
-        className={`py-2 px-4 rounded-lg ${
-          activeTab === "posts" ? "bg-[#f2bb94]" : "bg-transparent"
-        }`}
-      >
-        <Text
-          className={
-            activeTab === "posts"
-              ? "text-lg font-bold text-black"
-              : "text-lg text-gray-500"
-          }
-        >
-          Posts
-        </Text>
-      </TouchableOpacity>
-      <TouchableOpacity
-        onPress={() => setActiveTab("reviews")}
-        className={`py-2 px-4 rounded-lg ${
-          activeTab === "reviews" ? "bg-[#f2bb94]" : "bg-transparent"
-        }`}
-      >
-        <Text
-          className={
-            activeTab === "reviews"
-              ? "text-lg font-bold text-black"
-              : "text-lg text-gray-500"
-          }
-        >
-          Reviews
-        </Text>
-      </TouchableOpacity>
+    <View className="bg-white rounded-2xl shadow-sm overflow-hidden m-3 mb-0">
+      <View className="flex-row justify-between p-1">
+        {tabs.map((tab) => (
+          <TouchableOpacity
+            key={tab.id}
+            onPress={() => setActiveTab(tab.id)}
+            className={`flex-1 flex-row items-center justify-center py-3 px-4 space-x-2 
+              ${
+                activeTab === tab.id
+                  ? "bg-orange-50 rounded-xl border border-orange-200"
+                  : "bg-transparent"
+              }`}
+          >
+            <Ionicons
+              name={tab.icon}
+              size={18}
+              color={activeTab === tab.id ? "#EA9050" : "#6B7280"}
+            />
+            <Text
+              className={`font-medium ${
+                activeTab === tab.id ? "text-orange-500" : "text-gray-600"
+              }`}
+            >
+              {tab.label}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
     </View>
   );
 };

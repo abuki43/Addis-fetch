@@ -1,12 +1,20 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, Alert } from "react-native";
+import {
+  View,
+  TouchableOpacity,
+  Alert,
+  ScrollView,
+} from "react-native";
 import { collection, addDoc } from "firebase/firestore";
 import { db } from "../../config/firebaseConfig";
 import { useGlobalContext } from "../../context/GlobalProvider";
 import StarRating from "react-native-star-rating-widget";
 import { useLocalSearchParams } from "expo-router";
 import CustomButton from "../../components/CustomButton";
+import FormField from "../../components/FormField";
 import { router } from "expo-router";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { Text } from "react-native";
 
 const ReviewPage = () => {
   const [laoding, setLoading] = useState(false);
@@ -47,42 +55,82 @@ const ReviewPage = () => {
 
   if (!reviewedPersonId) {
     return (
-      <View className="flex-1 justify-center items-center bg-gray-100">
-        <Text className="text-lg text-gray-500">Can not find the user</Text>
-      </View>
+      <SafeAreaView className="flex-1 justify-center items-center bg-gray-50">
+        <Text className="text-lg text-gray-500 font-medium">
+          Cannot find the user
+        </Text>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View className="flex-1 p-4 bg-gray-100 pt-8">
-      <Text className="text-xl font-bold mb-4">Write a Review</Text>
+    <SafeAreaView className="flex-1 bg-gray-50">
+      <ScrollView className="flex-1">
+        <View className="p-4 pt-2">
+          {/* Header */}
+          <View className="mb-4">
+            <Text className="text-3xl font-bold text-gray-800">
+              Write a Review
+            </Text>
+            <Text className="text-gray-500 mt-2">
+              Share your experience to help others
+            </Text>
+          </View>
 
-      <Text className="text-lg mb-2">Rating</Text>
-      <StarRating
-        rating={rating}
-        onChange={setRating}
-        starSize={30}
-        color="gold"
-        className="mb-4"
-      />
+          {/* Rating Section */}
+          <View className="bg-white p-6 rounded-xl shadow-sm mb-6">
+            <Text className="text-lg font-semibold text-gray-700 mb-3">
+              Rate your experience
+            </Text>
+            <StarRating
+              rating={rating}
+              onChange={setRating}
+              starSize={32}
+              color="#FFD700"
+              enableHalfStar={false}
+            />
+          </View>
 
-      <Text className="text-lg mb-2">Description</Text>
-      <TextInput
-        className="border p-2 rounded bg-white mb-4"
-        placeholder="Write your review here..."
-        multiline
-        value={description}
-        onChangeText={setDescription}
-      />
+          {/* Description Section */}
+          <View className="bg-white p-6 rounded-xl shadow-sm mb-6">
+            <FormField
+              title="Your Review"
+              value={description}
+              handleChangeText={setDescription}
+              placeholder="Tell us about your experience..."
+              multiline
+              numberOfLines={6}
+              otherStyles="m-0 mb-0"
+              textAlignVertical="top"
+            />
+          </View>
 
-      <CustomButton
-        title="Submit Review"
-        handlePress={handleSubmitReview}
-        isLoading={laoding}
-        containerStyles="mt-2 bg-Primary mb-2"
-        textStyles="text-white"
-      />
-    </View>
+          {/* Buttons Container */}
+          <View className="flex-row justify-between space-x-4 mt-4">
+            {/* Submit Button */}
+            <View className="flex-1">
+              <CustomButton
+                title="Submit Review"
+                handlePress={handleSubmitReview}
+                isLoading={laoding}
+                containerStyles="bg-Primary py-4 rounded-xl shadow-lg"
+                textStyles="text-white font-bold text-lg"
+              />
+            </View>
+
+            {/* Cancel Button */}
+            <View className="flex-1">
+              <CustomButton
+                title="Cancel"
+                handlePress={() => router.back()}
+                containerStyles="bg-gray-200 py-4 rounded-xl shadow-lg"
+                textStyles="text-gray-700 font-bold text-lg"
+              />
+            </View>
+          </View>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 

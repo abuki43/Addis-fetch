@@ -61,7 +61,8 @@ const PrivateChat = () => {
         user,
         UID,
         setError,
-        setImageUploading
+        setImageUploading,
+        setChatId
       ),
     [chatId, user]
   );
@@ -126,12 +127,16 @@ const PrivateChat = () => {
   }
 
   if (error) return <Text className="text-center text-red-500">{error}</Text>;
-
+  const isDeletedUser = fullname === "Deleted User";
   return (
-    <View className="flex-1 bg-white mt-6 px-1">
+    <View className="flex-1 bg-white mt px-1">
       <View className="mt-3 mx-2 p-4 bg-[#e5e7eb] rounded-lg flex">
         <Link href={`/OthersProfile?UID=${UID}`} className="text-center">
-          <Text className="text-xl font-bold text-slate-700 text-center">
+          <Text
+            className={`text-xl font-bold ${
+              isDeletedUser ? "text-gray-400" : "text-red-500"
+            } text-center p-4 rounded-sm`}
+          >
             {fullname || "unknown"}
           </Text>
         </Link>

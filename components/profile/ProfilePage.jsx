@@ -5,6 +5,7 @@ import {
   Text,
   ActivityIndicator,
   TouchableOpacity,
+  RefreshControl, // Import RefreshControl
 } from "react-native";
 import {
   doc,
@@ -14,6 +15,8 @@ import {
   getDocs,
   query,
   where,
+  or,
+  orderBy,
 } from "firebase/firestore";
 import ProfileHeader from "./ProfileHeader";
 import ProfileTabs from "./ProfileTabs";
@@ -34,6 +37,7 @@ const ProfilePage = ({ isOwner, userID }) => {
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [refreshing, setRefreshing] = useState(false); // State for RefreshControl
   const router = useRouter();
 
   let profileUserID = isOwner ? globalUser?.uid : userID;
@@ -88,7 +92,8 @@ const ProfilePage = ({ isOwner, userID }) => {
     try {
       const reviewsQuery = query(
         collection(db, "reviews"),
-        where("reviewedPersonId", "==", profileUserID)
+        where("reviewedPersonId", "==", profileUserID),
+        orderBy("timestamp", "desc")
       );
       const reviewsSnapshot = await getDocs(reviewsQuery);
       const reviewsData = reviewsSnapshot.docs.map((doc) => ({
@@ -104,12 +109,19 @@ const ProfilePage = ({ isOwner, userID }) => {
     }
   };
 
-  const refresh = () => {
+  const refresh = async () => {
     setError(null);
-    setLoading(true);
-    fetchUser();
-    fetchPosts();
-    fetchReviews();
+    setRefreshing(true); // Start refreshing
+    try {
+      await fetchUser();
+      await fetchPosts();
+      await fetchReviews();
+    } catch (error) {
+      console.error("Error refreshing data:", error);
+      setError("Failed to refresh data");
+    } finally {
+      setRefreshing(false); // Stop refreshing
+    }
   };
 
   useEffect(() => {
@@ -167,14 +179,17 @@ const ProfilePage = ({ isOwner, userID }) => {
   if (!globalUser && isOwner) {
     return (
       <View className="flex-1 justify-center items-center bg-gray-100">
-        <Text className="text-lg text-gray-500">
+        <Text className="text-xl text-gray-600 font-medium text-center mb-2">
           Please sign up to view your profile.
         </Text>
+        <Text className="text-gray-400 mb-6 text-center w-3/4">
+          Don't have an account? Create a new one to enjoy all the features.
+        </Text>
         <TouchableOpacity
-          className="mt-4 px-4 py-2 bg-Secondary rounded-lg"
+          className="px-6 py-2 bg-Primary rounded-xl active:bg-orange-600 shadow-sm"
           onPress={() => router.push("/signUp")}
         >
-          <Text className="text-white font-bold">Sign Up</Text>
+          <Text className="text-white font-bold text-lg">Sign Up</Text>
         </TouchableOpacity>
       </View>
     );
@@ -185,7 +200,7 @@ const ProfilePage = ({ isOwner, userID }) => {
       <View className="flex-1 justify-center items-center bg-gray-100">
         <Text className="text-lg text-gray-500">{error}</Text>
         <TouchableOpacity
-          className="mt-4 px-4 py-2 bg-Secondary rounded-lg"
+          className="mt-4 px-4 py-2 bg-Primary rounded-lg"
           onPress={refresh}
         >
           <Text className="text-white font-bold">Refresh</Text>
@@ -195,7 +210,17 @@ const ProfilePage = ({ isOwner, userID }) => {
   }
 
   return (
-    <ScrollView className="flex-1 bg-gray-100 ">
+    <ScrollView
+      className="flex-1 bg-gray-100"
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing} // Controlled by the refreshing state
+          onRefresh={refresh} // Call the refresh function
+          colors={["#EA9050"]} // Customize the loading spinner color
+          tintColor="#EA9050" // Customize the loading spinner color
+        />
+      }
+    >
       <ProfileHeader
         user={currentUser}
         isOwner={isOwner}
@@ -207,11 +232,11 @@ const ProfilePage = ({ isOwner, userID }) => {
         setActiveTab={setActiveTab}
         isOwner={isOwner}
       />
-      <View className="flex-1">
+      <View className="flex-1 pt-0 pb-12">
         {activeTab === "info" && (
           <ProfileInfo
-            isOwner={isOwner}
-            user={currentUser}
+            isOwner={isOwner} // IF THE USER IS THE OWNER OF THE PROFILE
+            user={currentUser} // USER THAT IS BEING VIEWED ON THE PROFILE
             isEditing={isEditing}
             setIsEditing={setIsEditing}
             saveProfile={saveProfile}

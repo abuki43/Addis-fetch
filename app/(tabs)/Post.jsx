@@ -14,14 +14,13 @@ import { collection, addDoc } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import { auth, db, storage } from "../../config/firebaseConfig";
 import { useGlobalContext } from "../../context/GlobalProvider";
-import { uploadBytes } from "firebase/storage";
-import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
+import { uploadBytes, ref, getDownloadURL } from "firebase/storage";
 import CustomButton from "./../../components/CustomButton";
 import { router } from "expo-router";
+import FormField from './../../components/FormField';
 
 const PostScreen = () => {
   const { user, setUser } = useGlobalContext();
-
   const auth = getAuth();
   const userFromFB = auth.currentUser;
   const [description, setDescription] = useState("");
@@ -32,7 +31,6 @@ const PostScreen = () => {
   const [locationTo, setLocationTo] = useState("AddisAbaba");
   const [image, setImage] = useState(null);
   const [contactInfo, setContactInfo] = useState("");
-
   const [isLoading, setIsLoading] = useState(false);
 
   const handleImagePick = async () => {
@@ -75,6 +73,18 @@ const PostScreen = () => {
           "Email Verification Required",
           "Please check your email to verify before posting."
         );
+        return;
+      }
+
+      const countCharacters = (str) => str.split("").length;
+
+      if (
+        countCharacters(description) > 400 ||
+        countCharacters(category) > 50 ||
+        countCharacters(price) > 10 ||
+        countCharacters(contactInfo) > 100
+      ) {
+        Alert.alert("Character limit exceeded in one or more fields.");
         return;
       }
 
@@ -122,135 +132,148 @@ const PostScreen = () => {
     }
   };
 
+ 
+
   return (
-    <ScrollView className="p-5 bg-white pb-12 ">
-      <View className="md:w-[75%] md:mx-auto">
-        <Text className="text-2xl font-bold text-center mb-5">
-          Create a New Post
-        </Text>
-        <View className="mb-5">
-          <Text className="text-lg mb-2 text-gray-700">Description</Text>
-          <TextInput
-            value={description}
-            onChangeText={setDescription}
-            className="border border-gray-300 p-3 rounded text-base h-32"
-            placeholder="Enter description"
-            multiline
-          />
+    <ScrollView className="bg-white">
+      <View className="p-6 md:w-3/4 md:mx-auto pb-12">
+        <View className="mb-8">
+          <Text className="text-3xl font-bold text-gray-800 text-center">
+            Create a New Post
+          </Text>
+          <Text className="text-gray-500 text-center mt-2">
+            Share your travel plans or requirements
+          </Text>
         </View>
-        <View className="mb-5">
-          <Text className="text-lg mb-2 text-gray-700">Post Type</Text>
-          <View className="flex-row justify-between">
-            <TouchableOpacity
-              onPress={() => setPostType("order")}
-              className={`flex-1 items-center p-3 rounded border ${
-                postType === "order"
-                  ? "bg-Primary border-Primary"
-                  : "bg-gray-200 border-gray-300"
-              } mx-1`}
-            >
-              <Text
-                className={`${
-                  postType === "order" ? "text-white" : "text-black"
-                } text-base`}
+
+        {/* Post Type Selection */}
+        <View className="mb-8">
+          <Text className="text-base font-semibold text-gray-700 mb-3">
+            Post Type
+          </Text>
+          <View className="flex-row space-x-4">
+            {["order", "traveler"].map((type) => (
+              <TouchableOpacity
+                key={type}
+                onPress={() => setPostType(type)}
+                className={`flex-1 py-4 rounded-xl ${
+                  postType === type ? "bg-Primary" : "bg-gray-100"
+                } active:opacity-90`}
               >
-                Order
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => setPostType("traveler")}
-              className={`flex-1 items-center p-3 rounded border ${
-                postType === "traveler"
-                  ? "bg-Primary border-Primary"
-                  : "bg-gray-200 border-gray-300"
-              } mx-1`}
-            >
-              <Text
-                className={`${
-                  postType === "traveler" ? "text-white" : "text-black"
-                } text-base`}
-              >
-                Traveler
-              </Text>
-            </TouchableOpacity>
+                <Text
+                  className={`text-center font-semibold ${
+                    postType === type ? "text-white" : "text-gray-600"
+                  } capitalize`}
+                >
+                  {type}
+                </Text>
+              </TouchableOpacity>
+            ))}
           </View>
         </View>
-        <View className="mb-5">
-          <Text className="text-lg mb-2 text-gray-700">Category</Text>
-          <TextInput
-            value={category}
-            onChangeText={setCategory}
-            className="border border-gray-300 p-3 rounded text-base"
-            placeholder="Enter category"
-          />
-        </View>
-        <View className="mb-5">
-          <Text className="text-lg mb-2 text-gray-700">Price</Text>
-          <TextInput
-            value={price}
-            onChangeText={setPrice}
-            className="border border-gray-300 p-3 rounded text-base"
-            placeholder="Enter price"
-          />
-        </View>
-        <View className="mb-5">
-          <Text className="text-lg mb-2 text-gray-700">
-            {postType === "traveler"
+
+        {/* Description Field */}
+        <FormField
+          title="Description"
+          value={description}
+          handleChangeText={setDescription}
+          placeholder="Share the details of your post..."
+          multiline
+          numberOfLines={4}
+          otherStyles="mb-6"
+          textAlignVertical="top"
+        />
+
+        {/* Category Field */}
+        <FormField
+          title="Category"
+          value={category}
+          handleChangeText={setCategory}
+          placeholder="e.g., Electronics, Clothing, etc."
+          otherStyles="mb-6"
+        />
+
+        {/* Price Field */}
+        <FormField
+          title="Price"
+          value={price}
+          handleChangeText={setPrice}
+          placeholder="Enter price or 'Negotiable'"
+          otherStyles="mb-6"
+        />
+
+        {/* Location From Field */}
+        <FormField
+          title={
+            postType === "traveler"
               ? "From Where You Are Coming"
-              : "Where You Want the Item From"}
-          </Text>
-          <TextInput
-            value={locationFrom}
-            onChangeText={setLocationFrom}
-            className="border border-gray-300 p-3 rounded text-base"
-            placeholder="Enter location"
-          />
-        </View>
-        <View className="mb-5">
-          <Text className="text-lg mb-2 text-gray-700">
-            {postType === "traveler"
+              : "Where You Want the Item From"
+          }
+          value={locationFrom}
+          handleChangeText={setLocationFrom}
+          placeholder="Enter location"
+          otherStyles="mb-6"
+        />
+
+        {/* Location To Field */}
+        <FormField
+          title={
+            postType === "traveler"
               ? "To Where You Are Going"
-              : "Where You Live"}
+              : "Where You Live"
+          }
+          value={locationTo}
+          handleChangeText={setLocationTo}
+          placeholder="Enter location"
+          otherStyles="mb-6"
+        />
+
+        {/* Image Upload */}
+        <View className="mb-6">
+          <Text className="text-base font-semibold text-gray-700 mb-2">
+            Image
           </Text>
-          <TextInput
-            value={locationTo}
-            onChangeText={setLocationTo}
-            className="border border-gray-300 p-3 rounded text-base"
-            placeholder="Enter location"
-          />
-        </View>
-        <View className="mb-5">
-          <Text className="text-lg mb-2 text-gray-700">Image</Text>
           <TouchableOpacity
             onPress={handleImagePick}
-            className="border border-gray-300 p-3 rounded items-center justify-center h-40 mt-2"
+            className={`border-2 border-dashed border-gray-300 rounded-xl p-4 items-center justify-center h-48 ${
+              image ? "" : "bg-gray-50"
+            }`}
           >
             {image ? (
               <Image
                 source={{ uri: image }}
-                className="w-full h-full rounded"
+                className="w-full h-full rounded-lg"
+                resizeMode="cover"
               />
             ) : (
-              <Ionicons name="camera" size={32} color="gray" />
+              <View className="items-center">
+                <Ionicons
+                  name="cloud-upload-outline"
+                  size={40}
+                  color="#9CA3AF"
+                />
+                <Text className="text-gray-500 mt-2">Tap to upload image</Text>
+              </View>
             )}
           </TouchableOpacity>
         </View>
-        <View className="mb-5">
-          <Text className="text-lg mb-2 text-gray-700">Contact Info</Text>
-          <TextInput
-            value={contactInfo}
-            onChangeText={setContactInfo}
-            className="border border-gray-300 p-3 rounded text-base"
-            placeholder="Enter contact info"
-          />
-        </View>
 
+        {/* Contact Info Field */}
+        <FormField
+          title="Contact Info"
+          value={contactInfo}
+          handleChangeText={setContactInfo}
+          placeholder="How can people reach you?"
+          otherStyles="mb-6"
+        />
+
+        {/* Submit Button */}
         <CustomButton
-          title="Create post"
+          title="Create Post"
           handlePress={handleSubmit}
           isLoading={isLoading}
-          containerStyles="mt-6 bg-Primary mb-[149px]"
-          textStyles="text-white"
+          containerStyles="mt-8 bg-Primary rounded-xl py-4 mb-12"
+          textStyles="text-white font-bold text-lg"
         />
       </View>
     </ScrollView>

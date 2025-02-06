@@ -3,7 +3,7 @@
     "name": "Addis-Fetch",
     "scheme": "addis-fetch",
     "slug": "Addis-Fetch",
-    "version": "1.0.0",
+    "version": "0.1.0",
     "orientation": "portrait",
     "icon": "./assets/images/IMAGE3.png",
     "userInterfaceStyle": "light",
@@ -26,6 +26,8 @@
         "foregroundImage": "./assets/images/IMAGE3.png",
         "backgroundColor": "#FFF"
       },
+      "versionCode": 8,
+      "permissions": ["CAMERA"],
       "package": "com.abuki431.AddisFetch"
     },
     "web": {

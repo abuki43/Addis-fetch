@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from "react";
-import { View, Text, TextInput, ScrollView } from "react-native";
+import React, { useState } from "react";
+import { View } from "react-native";
+import FormField from "./../FormField";
 import CustomButton from "./../CustomButton";
 
 const ProfileInfo = ({
@@ -11,76 +12,73 @@ const ProfileInfo = ({
   isLoading,
 }) => {
   const [info, setInfo] = useState({
-    fullname: user?.fullname,
-    email: user?.email,
-    phoneNumber: user?.phoneNumber,
-    bio: user?.bio,
+    fullname: user?.fullname || "",
+    email: user?.email || "",
+    phoneNumber: user?.phoneNumber || "",
+    bio: user?.bio || "Be happy by using Addis-Fetch...",
   });
 
-  useEffect(() => {
-    setInfo({
-      fullname: user?.fullname || "",
-      email: user?.email || "",
-      phoneNumber: user?.phoneNumber || "",
-      bio: user?.bio || "Be happy by using Addis-Fetch...",
-    });
-  }, [user]);
-
   return (
-    <ScrollView className="p-6 bg-white rounded-lg shadow-lg mb-10 md:w-3/4 md:mx-auto">
-      <Text className="text-xl font-medium my-2">Full Name</Text>
-      <TextInput
-        value={info?.fullname}
-        onChangeText={(text) => setInfo({ ...info, fullname: text })}
+    <View className="bg-white rounded-2xl shadow-sm p-6 mb-12 pb-12 m-3">
+      <FormField
+        title="Full Name"
+        value={info.fullname}
+        handleChangeText={(text) => setInfo({ ...info, fullname: text })}
+        placeholder="Enter your full name"
+        otherStyles={`space-y-1 ${isEditing ? 'border-orange-200' : 'border-gray-100'}`}
         editable={isEditing && isOwner}
-        className="text-lg p-3 bg-gray-100 rounded-lg my-2 shadow-inner"
-      />
-      <Text className="text-xl font-medium my-2">Bio</Text>
-      <TextInput
-        value={info?.bio}
-        onChangeText={(text) => setInfo({ ...info, bio: text })}
-        editable={isEditing && isOwner}
-        className="text-lg p-3 bg-gray-100 rounded-lg my-2 shadow-inner"
-      />
-      <Text className="text-xl font-medium my-2">Email</Text>
-      <TextInput
-        value={info?.email}
-        editable={false}
-        className="text-lg p-3 bg-gray-100 rounded-lg my-2 shadow-inner"
-      />
-      <Text className="text-xl font-medium my-2">Phone</Text>
-      <TextInput
-        value={info?.phoneNumber}
-        onChangeText={(text) => setInfo({ ...info, phoneNumber: text })}
-        editable={isEditing && isOwner}
-        className="text-lg p-3 bg-gray-100 rounded-lg my-2 shadow-inner"
       />
 
-      {isOwner ? (
-        isEditing ? (
-          <CustomButton
-            title="Save"
-            containerStyles="bg-Primary rounded-md mt-4 mb-10 px-6 py-3"
-            textStyles="text-white font-semibold text-lg"
-            handlePress={() => {
-              // Extract only the required fields from the `info` object
+      <FormField
+        title="Bio"
+        value={info.bio}
+        handleChangeText={(text) => setInfo({ ...info, bio: text })}
+        placeholder="Enter your bio"
+        multiline
+        numberOfLines={4}
+        otherStyles={`space-y-1 ${isEditing ? 'border-orange-200' : 'border-gray-100'}`}
+        editable={isEditing && isOwner}
+      />
+
+      <FormField
+        title="Email"
+        value={info.email}
+        handleChangeText={() => {}}
+        placeholder="Enter your email"
+        otherStyles="space-y-1 border-gray-100"
+        editable={false}
+      />
+
+      <FormField
+        title="Phone"
+        value={info.phoneNumber}
+        handleChangeText={(text) => setInfo({ ...info, phoneNumber: text })}
+        placeholder="Enter your phone number"
+        otherStyles={`space-y-1 ${isEditing ? 'border-orange-200' : 'border-gray-100'}`}
+        editable={isEditing && isOwner}
+      />
+
+      {isOwner && (
+        <CustomButton
+          title={isEditing ? "Save Changes" : "Edit Profile"}
+          containerStyles={`${
+            isEditing ? "bg-orange-500" : "bg-orange-100"
+          } rounded-xl py-4 mt-4`}
+          textStyles={`font-semibold text-center ${
+            isEditing ? "text-white" : "text-orange-500"
+          }`}
+          handlePress={() => {
+            if (isEditing) {
               const { fullname, phoneNumber, bio } = info;
-              // Create a new object with the required fields
-              const filteredInfo = { fullname, phoneNumber, bio };
-              saveProfile(filteredInfo);
-            }}
-          />
-        ) : (
-          <CustomButton
-            isLoading={isLoading}
-            title="Edit"
-            containerStyles="bg-Primary rounded-md mt-4 mb-10 px-6 py-3"
-            textStyles="text-white font-semibold text-lg"
-            handlePress={() => setIsEditing(true)}
-          />
-        )
-      ) : null}
-    </ScrollView>
+              saveProfile({ fullname, phoneNumber, bio });
+            } else {
+              setIsEditing(true);
+            }
+          }}
+          isLoading={isLoading}
+        />
+      )}
+    </View>
   );
 };
 

@@ -9,7 +9,7 @@ const othersLayout = () => {
       <Stack>
         <Stack.Screen name="ReviewPage" options={{ headerShown: true }} />
         <Stack.Screen name="OthersProfile" options={{ headerShown: true }} />
-        <Stack.Screen name="PrivateChat" options={{ headerShown: false }} />
+        <Stack.Screen name="PrivateChat" options={{ headerShown: true }} />
       </Stack>
       <StatusBar style="dark" />
     </>
